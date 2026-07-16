@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golfnono 골프노노 — 실시간 날씨 & 맛집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        forest:  '#1e3f20',
+        fairway: '#2d5a30',
+        flag:    '#4a9e50',
+        rough:   '#0f2211',
+        gold:    '#c9a84c',
+        slate1:  '#e8eced',
+        slate2:  '#b0bec5',
+        slate3:  '#607d8b',
+      },
+      fontFamily: {
+        display: ['"DM Serif Display"', 'serif'],
+        sans:    ['"Noto Sans KR"', 'sans-serif'],
+      },
+    },
+  },
+};
+</script>
+<style>
+* { font-family: 'Noto Sans KR', sans-serif; box-sizing: border-box; }
+body { margin: 0; background: #0f2211; overflow: hidden; }
+
+.golf-marker {
+  width: 16px; height: 16px;
+  background: #4a9e50;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(74,158,80,.3), 0 2px 8px rgba(0,0,0,.4);
+  cursor: pointer;
+  transition: transform .15s;
+}
+.golf-marker:hover, .golf-marker.active {
+  background: #c9a84c;
+  box-shadow: 0 0 0 4px rgba(201,168,76,.4), 0 3px 12px rgba(0,0,0,.5);
+  transform: scale(1.4);
+}
+.leaflet-tile { filter: brightness(.85) saturate(.9); }
+.leaflet-container { background: #1a2e1a; }
+
+#sidebar {
+  width: 360px;
+  min-width: 360px;
+  background: #1e3f20;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2d5a30 #1e3f20;
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-track { background: #1e3f20; }
+#sidebar::-webkit-scrollbar-thumb { background: #2d5a30; border-radius: 3px; }
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b0bec5;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: -0.3px;
+}
+.tab-btn.active {
+  color: #c9a84c;
+  border-bottom-color: #c9a84c;
+}
+.tab-btn:hover:not(.active) { color: #e8eced; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(74,158,80,.18);
+  color: #4a9e50;
+  border: 1px solid rgba(74,158,80,.3);
+  white-space: nowrap;
+}
+
+.weather-chip {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+  flex: 1;
+}
+
+video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
+
+#bottom-sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #1e3f20;
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.32,.72,0,1);
+  z-index: 1000;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+#bottom-sheet.open { transform: translateY(0); }
+#sheet-handle {
+  width: 40px; height: 4px;
+  background: #4a9e50;
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.forecast-item {
+  min-width: 56px;
+  text-align: center;
+  background: rgba(255,255,255,.05);
+  border-radius: 10px;
+  padding: 8px 6px;
+}
+
+.rank-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  flex-shrink: 0;
+}
+.rank-1 { background: #c9a84c; color: #0f2211; }
+.rank-2 { background: #8ca0a8; color: #0f2211; }
+.rank-3 { background: #8c6e3a; color: #fff; }
+
+#loading-overlay {
+  position: fixed; inset: 0;
+  background: #0f2211;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999;
+  transition: opacity .4s;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(74,158,80,.2);
+  border-top-color: #4a9e50;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@media (max-width: 767px) {
+  #sidebar { display: none; }
+  #map { width: 100% !important; }
+}
+@media (min-width: 768px) {
+  #bottom-sheet { display: none !important; }
+}
+
+.cctv-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+}
+.video-wrap { position: relative; }
+
+.stars { color: #c9a84c; font-size: 13px; }
+</style>
+</head>
+<body class="bg-rough text-slate1">
+
+<!-- 로딩 오버레이 -->
+<div id="loading-overlay">
+  <div class="spinner mb-4"></div>
+  <p class="text-flag font-sans text-sm">골프장 정보를 불러오는 중...</p>
+</div>
+
+<!-- 헤더 -->
+<header class="h-16 bg-rough border-b border-fairway flex items-center px-5 gap-3 flex-shrink-0" style="z-index:500;position:relative;">
+  <span style="font-size:28px;">⛳</span>
+  <div>
+    <h1 class="font-display text-xl text-slate1 leading-none">Golfnono</h1>
+    <p class="text-xs text-slate3 mt-0.5">실시간 날씨 · CCTV · 맛집</p>
+  </div>
+  <div class="ml-auto flex items-center gap-2">
+    <span class="text-xs text-slate3">전국 골프장</span>
+    <span id="course-count" class="text-xs font-bold text-flag bg-flag bg-opacity-10 px-2 py-0.5 rounded-full">0개</span>
+  </div>
+</header>
+
+<!-- 메인 레이아웃 -->
+<div class="flex" style="height:calc(100vh - 64px);">
+
+  <!-- 사이드바 (데스크톱) -->
+  <div id="sidebar">
+
+    <!-- 초기 안내 -->
+    <div id="sidebar-welcome" class="flex flex-col items-center justify-center h-full px-6 text-center">
+      <div style="font-size:64px;" class="mb-4">🗺️</div>
+      <h2 class="text-lg font-bold text-slate1 mb-2">골프장을 선택하세요</h2>
+      <p class="text-sm text-slate3 leading-relaxed">지도에서 녹색 마커를 클릭하면<br>실시간 날씨, CCTV, 맛집 정보를<br>바로 확인할 수 있어요.</p>
+      <div class="mt-6 flex gap-2 flex-wrap justify-center">
+        <span class="badge">⛅ 실시간 날씨</span>
+        <span class="badge">📹 CCTV</span>
+        <span class="badge">🍽️ 맛집 Top3</span>
+      </div>
+    </div>
+
+    <!-- 상세 패널 (숨김) -->
+    <div id="sidebar-detail" class="hidden">
+
+      <!-- 골프장 헤더 -->
+      <div class="p-5 border-b border-fairway">
+        <div class="flex items-start gap-3">
+          <div id="d-weather-icon" class="text-4xl leading-none">⛅</div>
+          <div class="flex-1 min-w-0">
+            <h2 id="d-name" class="text-lg font-bold text-slate1 leading-tight truncate"></h2>
+            <p id="d-region" class="text-xs text-slate3 mt-0.5"></p>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span id="d-rating" class="stars"></span>
+              <span id="d-rating-num" class="text-xs text-gold font-bold"></span>
+            </div>
+          </div>
+          <div id="d-temp" class="text-2xl font-bold text-slate1 flex-shrink-0"></div>
+        </div>
+        <div id="d-tags" class="flex gap-1.5 flex-wrap mt-3"></div>
+      </div>
+
+      <!-- 탭 -->
+      <div class="flex border-b border-fairway bg-rough bg-opacity-40 sticky top-0" style="z-index:10;">
+        <button class="tab-btn active" onclick="switchTab('cctv')" id="tab-cctv">📹 CCTV</button>
+        <button class="tab-btn" onclick="switchTab('weather')" id="tab-weather">⛅ 날씨</button>
+        <button class="tab-btn" onclick="switchTab('food')" id="tab-food">🍽️ 맛집</button>
+      </div>
+
+      <!-- TAB: CCTV -->
+      <div id="panel-cctv" class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-red-400">LIVE</span>
+          <span id="cctv-label" class="text-xs text-slate3 truncate"></span>
+        </div>
+        <div class="video-wrap rounded-xl overflow-hidden border border-fairway">
+          <video id="cctv-video" muted playsinline controls></video>
+          <div id="cctv-overlay" class="cctv-overlay">
+            <div class="spinner"></div>
+            <span id="cctv-status" class="text-xs text-slate2">영상 로딩 중...</span>
+          </div>
+        </div>
+        <!-- 날씨 미니 3칸 -->
+        <div class="flex gap-2 mt-4">
+          <div class="weather-chip">
+            <div id="m-icon" class="text-xl mb-1">⛅</div>
+            <div id="m-desc" class="text-xs text-slate2"></div>
+          </div>
+          <div class="weather-chip">
+            <div class="text-base mb-1">💨</div>
+            <div id="m-wind" class="text-xs text-slate2"></div>
+          </div>
+          <div class="weather-chip">
+            <div class="text-base mb-1">💧</div>
+            <div id="m-humidity" class="text-xs text-slate2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: 날씨 -->
+      <div id="panel-weather" class="p-4 hidden">
+        <div class="bg-fairway bg-opacity-30 rounded-xl p-4 mb-4">
+          <div class="flex items-center gap-3 mb-3">
+            <span id="w-icon" class="text-5xl">⛅</span>
+            <div>
+              <div id="w-temp" class="text-3xl font-bold text-slate1"></div>
+              <div id="w-desc" class="text-sm text-slate2 mt-0.5"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="flex items-center gap-2"><span>💨</span><span id="w-wind" class="text-slate2"></span></div>
+            <div class="flex items-center gap-2"><span>💧</span><span id="w-humidity" class="text-slate2"></span></div>
+            <div class="flex items-center gap-2"><span>☀️</span><span id="w-uv" class="text-slate2"></span></div>
+            <div class="flex items-center gap-2"><span>👁</span><span id="w-visibility" class="text-slate2"></span></div>
+          </div>
+        </div>
+
+        <button id="windy-btn" class="w-full py-3 rounded-xl font-bold text-sm text-rough transition-all hover:opacity-90 active:scale-95 mb-4" style="background:#c9a84c;">
+          🌬️ Windy 초정밀 레이더 확인 →
+        </button>
+
+        <!-- 48시간 예보 -->
+        <div class="mb-2">
+          <h3 class="text-xs font-bold text-slate3 uppercase tracking-wider mb-3">48시간 예보</h3>
+          <div id="forecast-list" class="flex gap-2 overflow-x-auto pb-2"></div>
+        </div>
+      </div>
+
+      <!-- TAB: 맛집 -->
+      <div id="panel-food" class="p-4 hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-slate1">라운드 후 맛집 Top 3</h3>
+          <span class="text-xs text-slate3">📍 골프장 기준</span>
+        </div>
+        <div id="food-list" class="flex flex-col gap-3"></div>
+        <p class="text-xs text-slate3 text-center mt-4">T-map 결제 데이터 · 카드 빅데이터 기반</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 지도 -->
+  <div id="map" class="flex-1"></div>
+</div>
+
+<!-- 모바일 바텀시트 -->
+<div id="bottom-sheet">
+  <div id="sheet-handle"></div>
+  <button onclick="toggleSheet(false)" class="absolute top-3 right-4 text-slate3 text-xl font-light">✕</button>
+
+  <div id="sheet-header" class="px-5 pt-2 pb-4 border-b border-fairway">
+    <div class="flex items-center gap-3">
+      <span id="sh-icon" class="text-3xl">⛅</span>
+      <div class="flex-1 min-w-0">
+        <h2 id="sh-name" class="text-base font-bold text-slate1 truncate"></h2>
+        <p id="sh-region" class="text-xs text-slate3"></p>
+      </div>
+      <div id="sh-temp" class="text-xl font-bold text-slate1"></div>
+    </div>
+    <div id="sh-tags" class="flex gap-1.5 flex-wrap mt-2"></div>
+  </div>
+
+  <div class="flex border-b border-fairway bg-rough bg-opacity-40">
+    <button class="tab-btn active" onclick="switchTabSheet('cctv')" id="stab-cctv">📹 CCTV</button>
+    <button class="tab-btn" onclick="switchTabSheet('weather')" id="stab-weather">⛅ 날씨</button>
+    <button class="tab-btn" onclick="switchTabSheet('food')" id="stab-food">🍽️ 맛집</button>
+  </div>
+
+  <div id="spanel-cctv" class="p-4">
+    <div class="video-wrap rounded-xl overflow-hidden border border-fairway">
+      <video id="scctv-video" muted playsinline controls></video>
+      <div id="scctv-overlay" class="cctv-overlay">
+        <div class="spinner"></div>
+        <span class="text-xs text-slate2">영상 로딩 중...</span>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-3">
+      <div class="weather-chip"><div id="sm-icon" class="text-xl mb-1">⛅</div><div id="sm-desc" class="text-xs text-slate2"></div></div>
+      <div class="weather-chip"><div class="text-base mb-1">💨</div><div id="sm-wind" class="text-xs text-slate2"></div></div>
+      <div class="weather-chip"><div class="text-base mb-1">💧</div><div id="sm-humidity" class="text-xs text-slate2"></div></div>
+    </div>
+  </div>
+
+  <div id="spanel-weather" class="p-4 hidden">
+    <div class="bg-fairway bg-opacity-30 rounded-xl p-4 mb-4">
+      <div class="flex items-center gap-3 mb-3">
+        <span id="sw-icon" class="text-4xl">⛅</span>
+        <div>
+          <div id="sw-temp" class="text-2xl font-bold text-slate1"></div>
+          <div id="sw-desc" class="text-sm text-slate2"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div class="flex items-center gap-2"><span>💨</span><span id="sw-wind" class="text-slate2"></span></div>
+        <div class="flex items-center gap-2"><span>💧</span><span id="sw-humidity" class="text-slate2"></span></div>
+        <div class="flex items-center gap-2"><span>☀️</span><span id="sw-uv" class="text-slate2"></span></div>
+        <div class="flex items-center gap-2"><span>👁</span><span id="sw-visibility" class="text-slate2"></span></div>
+      </div>
+    </div>
+    <button id="swindy-btn" class="w-full py-3 rounded-xl font-bold text-sm text-rough hover:opacity-90 active:scale-95" style="background:#c9a84c;">
+      🌬️ Windy 초정밀 레이더 확인 →
+    </button>
+  </div>
+
+  <div id="spanel-food" class="p-4 hidden">
+    <div id="sfood-list" class="flex flex-col gap-3"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FALLBACK 데이터 (file:// 로컬 실행용)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const FALLBACK_COURSES = [
+  {
+    id: 'nambu', name: '남부 컨트리클럽', region: '경기도 용인시',
+    lat: 37.2403, lng: 127.1944, holes: 36, type: '퍼블릭', rating: 4.8,
+    tags: ['36홀', '퍼블릭', '챔피언십'],
+    cctvUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    cctvLabel: '경부고속도로 수원IC 인근',
+    weather: { icon:'⛅', temp:23, desc:'구름 조금', wind:'북서 4m/s', humidity:'52%', uv:'UV 5 (보통)', visibility:'20km' },
+    restaurants: [
+      { rank:1, name:'용인왕갈비', category:'한식·갈비', distance:'1.2km', badge1:'T-map 목적지 1위', badge2:'13-15시 결제 42%', badge3:'주차 완비', price:'35,000원~', emoji:'🥩' },
+      { rank:2, name:'미나리 두부마을', category:'한식·두부', distance:'2.1km', badge1:'카드결제 급증 ↑', badge2:'줄서는 맛집', badge3:'예약 가능', price:'18,000원~', emoji:'🌿' },
+      { rank:3, name:'우리손칼국수', category:'분식·칼국수', distance:'0.8km', badge1:'가성비 1위', badge2:'대기 없음', badge3:'단체석 있음', price:'12,000원~', emoji:'🍜' },
+    ],
+  },
+  {
+    id: 'gapyeong', name: '가평 베네스트 GC', region: '경기도 가평군',
+    lat: 37.8142, lng: 127.5110, holes: 18, type: '프라이빗', rating: 4.9,
+    tags: ['18홀', '프라이빗', '산악코스'],
+    cctvUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    cctvLabel: '서울양양고속도로 가평IC 인근',
+    weather: { icon:'🌤', temp:19, desc:'맑음', wind:'동 2m/s', humidity:'45%', uv:'UV 4 (보통)', visibility:'25km' },
+    restaurants: [
+      { rank:1, name:'가평잣두부마을', category:'한식·두부', distance:'2.3km', badge1:'T-map 목적지 1위', badge2:'13-15시 결제 38%', badge3:'주차 완비', price:'22,000원~', emoji:'🫘' },
+      { rank:2, name:'산골닭갈비', category:'한식·닭갈비', distance:'1.5km', badge1:'블로거 추천 1위', badge2:'웨이팅 있음', badge3:'예약 불가', price:'16,000원~', emoji:'🍗' },
+      { rank:3, name:'남이섬 막국수', category:'분식·막국수', distance:'3.0km', badge1:'관광객 픽', badge2:'대기 10분', badge3:'경치 좋음', price:'14,000원~', emoji:'🍝' },
+    ],
+  },
+  {
+    id: 'wellington', name: '웰링턴 CC', region: '경기도 광주시',
+    lat: 37.4072, lng: 127.3421, holes: 27, type: '프라이빗', rating: 4.7,
+    tags: ['27홀', '프라이빗', '구릉코스'],
+    cctvUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    cctvLabel: '중부고속도로 광주IC 인근',
+    weather: { icon:'🌧', temp:17, desc:'비', wind:'남서 6m/s', humidity:'82%', uv:'UV 1 (낮음)', visibility:'8km' },
+    restaurants: [
+      { rank:1, name:'광주 한우명가', category:'한식·한우', distance:'1.8km', badge1:'T-map 목적지 1위', badge2:'13-15시 결제 51%', badge3:'발렛 가능', price:'65,000원~', emoji:'🥩' },
+      { rank:2, name:'초월 순두부찌개', category:'한식·두부', distance:'0.9km', badge1:'로컬 맛집', badge2:'대기 없음', badge3:'단체 가능', price:'10,000원~', emoji:'🍲' },
+      { rank:3, name:'양평 물닭갈비', category:'한식·닭갈비', distance:'4.2km', badge1:'SNS 핫플', badge2:'예약 필수', badge3:'드라이브코스', price:'20,000원~', emoji:'🍗' },
+    ],
+  },
+  {
+    id: 'trinity', name: '트리니티 클럽', region: '강원도 홍천군',
+    lat: 37.6693, lng: 127.9124, holes: 18, type: '프라이빗', rating: 4.8,
+    tags: ['18홀', '프라이빗', '리조트형'],
+    cctvUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    cctvLabel: '서울춘천고속도로 홍천IC 인근',
+    weather: { icon:'🌥', temp:15, desc:'흐림', wind:'북동 3m/s', humidity:'68%', uv:'UV 2 (낮음)', visibility:'15km' },
+    restaurants: [
+      { rank:1, name:'홍천 한우 직판장', category:'한식·한우', distance:'5.0km', badge1:'T-map 목적지 1위', badge2:'13-15시 결제 47%', badge3:'주차 완비', price:'45,000원~', emoji:'🥩' },
+      { rank:2, name:'강원 메밀국수', category:'분식·국수', distance:'2.7km', badge1:'강원 향토음식', badge2:'대기 없음', badge3:'포장 가능', price:'11,000원~', emoji:'🍜' },
+      { rank:3, name:'홍천 닭갈비 골목', category:'한식·닭갈비', distance:'4.8km', badge1:'현지인 1위', badge2:'단체 예약 권장', badge3:'단체석 있음', price:'15,000원~', emoji:'🍗' },
+    ],
+  },
+  {
+    id: 'trius', name: '트리우스 골프클럽', region: '인천광역시 영종도',
+    lat: 37.4844, lng: 126.4830, holes: 18, type: '퍼블릭', rating: 4.6,
+    tags: ['18홀', '퍼블릭', '해변코스'],
+    cctvUrl: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
+    cctvLabel: '인천국제공항고속도로 영종IC 인근',
+    weather: { icon:'🌊', temp:21, desc:'흐리고 바람', wind:'서 8m/s', humidity:'74%', uv:'UV 3 (보통)', visibility:'12km' },
+    restaurants: [
+      { rank:1, name:'영종 활어회 센터', category:'해산물·회', distance:'3.1km', badge1:'T-map 목적지 1위', badge2:'13-15시 결제 35%', badge3:'주차 완비', price:'55,000원~', emoji:'🐟' },
+      { rank:2, name:'을왕리 해물찜', category:'해산물·찜', distance:'4.0km', badge1:'SNS 핫플', badge2:'예약 권장', badge3:'오션뷰', price:'40,000원~', emoji:'🦐' },
+      { rank:3, name:'영종 조개구이', category:'해산물·조개', distance:'2.5km', badge1:'로컬 1위', badge2:'대기 15분', badge3:'야외 테이블', price:'30,000원~', emoji:'🦪' },
+    ],
+  },
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 앱 상태
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let allCourses = [];
+let activeMarkerId = null;
+let markers = {};
+let currentCourse = null;
+let hlsInstance = null;
+let shlsInstance = null;
+const isMobile = () => window.innerWidth < 768;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 지도 초기화
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// [카카오맵 교체 포인트]
+// 1. https://developers.kakao.com 에서 JavaScript 키 발급
+// 2. <head>에: <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KEY"></script>
+// 3. L.map 대신 new kakao.maps.Map() 사용
+const map = L.map('map', { center: [36.5, 127.8], zoom: 7, zoomControl: true });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19,
+}).addTo(map);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 로딩 스피너
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function showLoading() {
+  document.getElementById('loading-overlay').style.opacity = '1';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() {
+  const el = document.getElementById('loading-overlay');
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.display = 'none'; }, 400);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 마커 생성
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderMarkers(courses) {
+  allCourses = courses;
+  document.getElementById('course-count').textContent = courses.length + '개';
+
+  courses.forEach(course => {
+    const el = document.createElement('div');
+    el.className = 'golf-marker';
+    el.title = course.name;
+
+    const marker = L.marker([course.lat, course.lng], {
+      icon: L.divIcon({ className: '', html: el, iconSize: [16, 16], iconAnchor: [8, 8] })
+    }).addTo(map);
+
+    marker.on('click', () => selectCourse(course));
+    markers[course.id] = { marker, el };
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 골프장 선택
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function selectCourse(course) {
+  currentCourse = course;
+
+  // 이전 active 마커 초기화
+  if (activeMarkerId && markers[activeMarkerId]) {
+    markers[activeMarkerId].el.classList.remove('active');
+  }
+  activeMarkerId = course.id;
+  markers[course.id].el.classList.add('active');
+
+  map.panTo([course.lat, course.lng], { animate: true, duration: 0.5 });
+
+  if (isMobile()) {
+    renderDetailSheet(course);
+    toggleSheet(true);
+  } else {
+    renderDetail(course);
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 사이드바 렌더링 (데스크톱)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderDetail(course) {
+  document.getElementById('sidebar-welcome').classList.add('hidden');
+  document.getElementById('sidebar-detail').classList.remove('hidden');
+
+  // 헤더
+  document.getElementById('d-weather-icon').textContent = course.weather.icon;
+  document.getElementById('d-name').textContent = course.name;
+  document.getElementById('d-region').textContent = course.region;
+  document.getElementById('d-temp').textContent = course.weather.temp + '°C';
+  document.getElementById('d-rating').textContent = '★'.repeat(Math.round(course.rating)) + '☆'.repeat(5 - Math.round(course.rating));
+  document.getElementById('d-rating-num').textContent = course.rating.toFixed(1);
+
+  const tagsEl = document.getElementById('d-tags');
+  tagsEl.innerHTML = course.tags.map(t => `<span class="badge">${t}</span>`).join('');
+
+  switchTab('cctv');
+  renderWeather(course);
+  renderFood(course);
+  loadCCTV(course.cctvUrl);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CCTV 로드 (데스크톱)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function loadCCTV(url) {
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  const video = document.getElementById('cctv-video');
+  const overlay = document.getElementById('cctv-overlay');
+  const status = document.getElementById('cctv-status');
+  overlay.style.display = 'flex';
+  status.textContent = '영상 로딩 중...';
+  document.getElementById('cctv-label').textContent = currentCourse ? currentCourse.cctvLabel : '';
+
+  if (Hls.isSupported()) {
+    hlsInstance = new Hls({ enableWorker: false });
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(video);
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+      overlay.style.display = 'none';
+    });
+    hlsInstance.on(Hls.Events.ERROR, (_, d) => {
+      if (d.fatal) status.textContent = '영상 연결 실패';
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.play().catch(() => {});
+    overlay.style.display = 'none';
+  } else {
+    status.textContent = 'HLS 미지원 브라우저';
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 날씨 렌더링
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderWeather(course) {
+  const w = course.weather;
+  // 미니 카드
+  document.getElementById('m-icon').textContent = w.icon;
+  document.getElementById('m-desc').textContent = w.desc;
+  document.getElementById('m-wind').textContent = w.wind;
+  document.getElementById('m-humidity').textContent = w.humidity;
+  // 날씨 탭
+  document.getElementById('w-icon').textContent = w.icon;
+  document.getElementById('w-temp').textContent = w.temp + '°C';
+  document.getElementById('w-desc').textContent = w.desc;
+  document.getElementById('w-wind').textContent = w.wind;
+  document.getElementById('w-humidity').textContent = w.humidity;
+  document.getElementById('w-uv').textContent = w.uv;
+  document.getElementById('w-visibility').textContent = '시야 ' + w.visibility;
+
+  document.getElementById('windy-btn').onclick = () => {
+    window.open(`https://www.windy.com/?${course.lat},${course.lng},11`, '_blank');
+  };
+
+  // 48시간 예보 Mock
+  const forecastData = generateForecast(w);
+  const fc = document.getElementById('forecast-list');
+  fc.innerHTML = forecastData.map(f => `
+    <div class="forecast-item flex-shrink-0">
+      <div class="text-xs text-slate3 mb-1">${f.time}</div>
+      <div class="text-lg mb-1">${f.icon}</div>
+      <div class="text-xs font-bold text-slate1">${f.temp}°</div>
+    </div>
+  `).join('');
+}
+
+function generateForecast(base) {
+  const icons = ['⛅','🌤','☀️','🌥','🌧','⛅','🌤','☀️','🌥'];
+  const hours = ['지금','3h','6h','9h','12h','15h','18h','21h','24h','27h','30h','33h','36h','42h','48h'];
+  return hours.slice(0, 10).map((h, i) => ({
+    time: h,
+    icon: icons[i % icons.length],
+    temp: base.temp + Math.round((Math.random() - 0.5) * 6),
+  }));
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 맛집 렌더링
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderFood(course) {
+  document.getElementById('food-list').innerHTML = course.restaurants.map(r => foodCardHTML(r)).join('');
+}
+
+function foodCardHTML(r) {
+  return `
+    <div class="bg-fairway bg-opacity-25 rounded-xl p-3 border border-fairway border-opacity-50">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="rank-num rank-${r.rank}">${r.rank}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-base">${r.emoji}</span>
+            <span class="font-bold text-sm text-slate1 truncate">${r.name}</span>
+          </div>
+          <div class="text-xs text-slate3 mt-0.5">${r.category} · ${r.distance}</div>
+        </div>
+        <div class="text-xs font-bold text-gold flex-shrink-0">${r.price}</div>
+      </div>
+      <div class="flex gap-1.5 flex-wrap">
+        <span class="badge">${r.badge1}</span>
+        <span class="badge">${r.badge2}</span>
+        <span class="badge">${r.badge3}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 탭 전환 (데스크톱)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function switchTab(tabId) {
+  ['cctv', 'weather', 'food'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tabId);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tabId);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 모바일 바텀시트 렌더링
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderDetailSheet(course) {
+  document.getElementById('sh-icon').textContent = course.weather.icon;
+  document.getElementById('sh-name').textContent = course.name;
+  document.getElementById('sh-region').textContent = course.region;
+  document.getElementById('sh-temp').textContent = course.weather.temp + '°C';
+  document.getElementById('sh-tags').innerHTML = course.tags.map(t => `<span class="badge">${t}</span>`).join('');
+
+  const w = course.weather;
+  document.getElementById('sm-icon').textContent = w.icon;
+  document.getElementById('sm-desc').textContent = w.desc;
+  document.getElementById('sm-wind').textContent = w.wind;
+  document.getElementById('sm-humidity').textContent = w.humidity;
+
+  document.getElementById('sw-icon').textContent = w.icon;
+  document.getElementById('sw-temp').textContent = w.temp + '°C';
+  document.getElementById('sw-desc').textContent = w.desc;
+  document.getElementById('sw-wind').textContent = w.wind;
+  document.getElementById('sw-humidity').textContent = w.humidity;
+  document.getElementById('sw-uv').textContent = w.uv;
+  document.getElementById('sw-visibility').textContent = '시야 ' + w.visibility;
+
+  document.getElementById('swindy-btn').onclick = () => {
+    window.open(`https://www.windy.com/?${course.lat},${course.lng},11`, '_blank');
+  };
+
+  document.getElementById('sfood-list').innerHTML = course.restaurants.map(r => foodCardHTML(r)).join('');
+
+  switchTabSheet('cctv');
+  loadCCTVSheet(course.cctvUrl);
+}
+
+function loadCCTVSheet(url) {
+  if (shlsInstance) { shlsInstance.destroy(); shlsInstance = null; }
+  const video = document.getElementById('scctv-video');
+  const overlay = document.getElementById('scctv-overlay');
+  overlay.style.display = 'flex';
+
+  if (Hls.isSupported()) {
+    shlsInstance = new Hls({ enableWorker: false });
+    shlsInstance.loadSource(url);
+    shlsInstance.attachMedia(video);
+    shlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+      overlay.style.display = 'none';
+    });
+    shlsInstance.on(Hls.Events.ERROR, (_, d) => {
+      if (d.fatal) overlay.querySelector('span').textContent = '영상 연결 실패';
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.play().catch(() => {});
+    overlay.style.display = 'none';
+  }
+}
+
+function switchTabSheet(tabId) {
+  ['cctv', 'weather', 'food'].forEach(t => {
+    document.getElementById('spanel-' + t).classList.toggle('hidden', t !== tabId);
+    document.getElementById('stab-' + t).classList.toggle('active', t === tabId);
+  });
+}
+
+function toggleSheet(open) {
+  document.getElementById('bottom-sheet').classList.toggle('open', open);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 앱 초기화
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+async function init() {
+  showLoading();
+  try {
+    const res = await fetch('/api/courses');
+    if (!res.ok) throw new Error('API 오류');
+    const { courses } = await res.json();
+    renderMarkers(courses);
+  } catch (e) {
+    // file:// 로컬 또는 API 실패 시 폴백
+    renderMarkers(FALLBACK_COURSES);
+  }
+  hideLoading();
+}
+
+init();
+</script>
+</body>
+</html>

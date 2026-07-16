@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    { "source": "/api/courses", "destination": "/api/courses.js" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "s-maxage=86400" }
+      ]
+    }
+  ]
+}
