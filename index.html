@@ -152,6 +152,30 @@ header {
 .w-desc { font-size: 13px; color: #6b7280; margin-top: 3px; }
 .w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .w-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; }
+/* 골프 날씨 지수 */
+.golf-index {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid #bbf7d0; border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 12px;
+}
+.golf-index-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.golf-index-title { font-size: 12px; font-weight: 700; color: #15803d; }
+.golf-index-score { font-size: 20px; font-weight: 800; color: #15803d; }
+.golf-index-bar { height: 7px; background: #d1fae5; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.golf-index-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #22c55e, #16a34a); transition: width .6s; }
+.golf-index-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.golf-index-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+.git-good { background: #dcfce7; color: #15803d; }
+.git-warn { background: #fef9c3; color: #854d0e; }
+.git-bad  { background: #fee2e2; color: #991b1b; }
+/* 레이더 토글 */
+.radar-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
+.r-btn {
+  flex: 1; padding: 7px 4px; border: 1.5px solid #e5e7eb; background: #fff;
+  border-radius: 8px; font-size: 12px; font-weight: 600; color: #6b7280;
+  cursor: pointer; transition: all .18s;
+}
+.r-btn.on { background: #22c55e; border-color: #22c55e; color: #fff; }
 .section-label {
   font-size: 13px; font-weight: 600; color: #374151;
   margin: 14px 0 8px; padding-bottom: 6px;
@@ -353,7 +377,13 @@ header {
             <div class="w-row"><span>👁</span><span id="w-vis"></span></div>
           </div>
         </div>
-        <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
+        <div id="golf-index-card"></div>
+        <div class="section-label">⛳ 골프 날씨 레이더</div>
+        <div class="radar-toggle">
+          <button class="r-btn on" onclick="setRadarOverlay('wind','windy-iframe',this)">🌬️ 바람</button>
+          <button class="r-btn" onclick="setRadarOverlay('rain','windy-iframe',this)">🌧️ 강수</button>
+          <button class="r-btn" onclick="setRadarOverlay('temp','windy-iframe',this)">🌡️ 기온</button>
+        </div>
         <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
         <div class="section-label">📹 인근 도로 CCTV 실시간</div>
         <select class="cctv-select" id="cctv-select"></select>
@@ -419,7 +449,13 @@ header {
         <div class="w-row"><span>👁</span><span id="sw-vis"></span></div>
       </div>
     </div>
-    <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
+    <div id="s-golf-index-card"></div>
+    <div class="section-label">⛳ 골프 날씨 레이더</div>
+    <div class="radar-toggle">
+      <button class="r-btn on" onclick="setRadarOverlay('wind','s-windy-iframe',this)">🌬️ 바람</button>
+      <button class="r-btn" onclick="setRadarOverlay('rain','s-windy-iframe',this)">🌧️ 강수</button>
+      <button class="r-btn" onclick="setRadarOverlay('temp','s-windy-iframe',this)">🌡️ 기온</button>
+    </div>
     <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
     <div class="section-label">📹 인근 도로 CCTV 실시간</div>
     <select class="cctv-select" id="s-cctv-select"></select>
@@ -652,6 +688,7 @@ function fillDetail(c) {
   document.getElementById('d-temp').textContent = c.weather.temp + '°C';
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('w', c);
+  renderGolfIndex('golf-index-card', c.weather);
   fillCctv('windy-iframe', c);
   loadCctv(c, 'cctv-video', 'cctv-select', 'cctv-overlay', 'cctv-overlay-msg', 'cctv-meta');
   tab('weather');
@@ -664,14 +701,70 @@ function fillSheet(c) {
   document.getElementById('s-temp').textContent = c.weather.temp + '°C';
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('sw', c);
+  renderGolfIndex('s-golf-index-card', c.weather);
   fillCctv('s-windy-iframe', c);
   loadCctv(c, 's-cctv-video', 's-cctv-select', 's-cctv-overlay', 's-cctv-overlay-msg', 's-cctv-meta');
   stab('weather');
 }
 
+function windyUrl(lat, lng, overlay) {
+  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&zoom=11&level=surface&overlay=${overlay}&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+}
 function fillCctv(iframeId, c) {
-  const src = `https://embed.windy.com/embed2.html?lat=${c.lat}&lon=${c.lng}&zoom=11&level=surface&overlay=wind&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
-  document.getElementById(iframeId).src = src;
+  document.getElementById(iframeId).src = windyUrl(c.lat, c.lng, 'wind');
+}
+function setRadarOverlay(overlay, iframeId, btn) {
+  const iframe = document.getElementById(iframeId);
+  if (!iframe) return;
+  const src = iframe.src;
+  const base = src.replace(/overlay=[^&]+/, `overlay=${overlay}`);
+  iframe.src = base;
+  btn.closest('.radar-toggle').querySelectorAll('.r-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function calcGolfIndex(weather) {
+  const windMs = parseFloat((weather.wind || '').match(/[\d.]+/)?.[0] || 0);
+  const desc = (weather.desc || '').toLowerCase();
+  const temp = weather.temp || 20;
+  // wind score (0-40)
+  const wScore = windMs <= 3 ? 40 : windMs <= 6 ? 32 : windMs <= 9 ? 20 : windMs <= 13 ? 8 : 0;
+  // rain score (0-40)
+  const rScore = desc.includes('비') || desc.includes('rain') ? 0
+    : desc.includes('소나기') || desc.includes('shower') ? 5
+    : desc.includes('흐') || desc.includes('cloud') ? 28
+    : 40;
+  // temp score (0-20)
+  const tScore = temp >= 14 && temp <= 26 ? 20 : temp >= 10 && temp <= 30 ? 12 : temp >= 5 && temp <= 34 ? 6 : 0;
+  const total = wScore + rScore + tScore;
+  const tags = [];
+  if (windMs > 9) tags.push({ label: `강풍 ${windMs}m/s`, cls: 'git-bad' });
+  else if (windMs > 5) tags.push({ label: `바람 ${windMs}m/s`, cls: 'git-warn' });
+  else tags.push({ label: `바람 양호`, cls: 'git-good' });
+  if (rScore === 0) tags.push({ label: '우천 불가', cls: 'git-bad' });
+  else if (rScore < 30) tags.push({ label: '흐림', cls: 'git-warn' });
+  else tags.push({ label: '맑음', cls: 'git-good' });
+  if (tScore >= 20) tags.push({ label: `${temp}°C 최적`, cls: 'git-good' });
+  else if (tScore >= 12) tags.push({ label: `${temp}°C 양호`, cls: 'git-warn' });
+  else tags.push({ label: `${temp}°C 비적합`, cls: 'git-bad' });
+  const label = total >= 80 ? '라운딩 최적' : total >= 55 ? '라운딩 가능' : total >= 30 ? '주의 필요' : '라운딩 비권장';
+  return { total, label, tags };
+}
+function renderGolfIndex(cardId, weather) {
+  const el = document.getElementById(cardId);
+  if (!el) return;
+  const { total, label, tags } = calcGolfIndex(weather);
+  const color = total >= 80 ? '#15803d' : total >= 55 ? '#ca8a04' : total >= 30 ? '#ea580c' : '#dc2626';
+  el.innerHTML = `
+  <div class="golf-index">
+    <div class="golf-index-head">
+      <span class="golf-index-title">⛳ 골프 날씨 지수</span>
+      <span class="golf-index-score" style="color:${color}">${total}<small style="font-size:12px;font-weight:600;">/100</small></span>
+    </div>
+    <div class="golf-index-bar"><div class="golf-index-fill" style="width:${total}%;background:${color};"></div></div>
+    <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:6px;">${label}</div>
+    <div class="golf-index-tags">${tags.map(t=>`<span class="golf-index-tag ${t.cls}">${t.label}</span>`).join('')}</div>
+  </div>`;
 }
 
 function getDistance(lat1, lng1, lat2, lng2) {
