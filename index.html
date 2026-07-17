@@ -462,6 +462,7 @@ async function fetchWeather(c) {
 let foodOverlays = [];
 let foodPositions = {};
 const FOOD_ANGLES = [50, 160, 280];
+let activeCourse = null;
 
 function getRestaurantPos(course, r) {
   const km = parseFloat(r.dist) || 1;
@@ -512,9 +513,9 @@ async function select(c, marker) {
   marker.setImage(activeImg);
   map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
   clearFoodOverlays();
-  addFoodMarkers(c);
   const weather = await fetchWeather(c);
   const course = { ...c, weather };
+  activeCourse = course;
   if (window.innerWidth < 768) {
     fillSheet(course);
     document.getElementById('sheet').classList.add('open');
@@ -607,12 +608,16 @@ function tab(id) {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
+  if (id === 'food' && activeCourse) { clearFoodOverlays(); addFoodMarkers(activeCourse); }
+  else clearFoodOverlays();
 }
 function stab(id) {
   ['cctv','weather','food'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
+  if (id === 'food' && activeCourse) { clearFoodOverlays(); addFoodMarkers(activeCourse); }
+  else clearFoodOverlays();
 }
 function closeSheet() {
   document.getElementById('sheet').classList.remove('open');
