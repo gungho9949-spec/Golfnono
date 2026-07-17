@@ -371,22 +371,15 @@ header {
       </div>
 
       <div class="panel on" id="p-weather">
-        <div class="w-card">
-          <div class="w-main">
-            <span class="w-big-icon" id="w-icon"></span>
-            <div>
-              <div class="w-temp-big" id="w-temp"></div>
-              <div class="w-desc" id="w-desc"></div>
-            </div>
-          </div>
-          <div class="w-grid">
-            <div class="w-row"><span>💨</span><span id="w-wind"></span></div>
-            <div class="w-row"><span>💧</span><span id="w-hum"></span></div>
-            <div class="w-row"><span>🌧️</span><span id="w-rain"></span></div>
-            <div class="w-row"><span>☀️</span><span id="w-uv"></span></div>
-            <div class="w-row"><span>👁</span><span id="w-vis"></span></div>
-          </div>
-        </div>
+        <!-- hidden spans for fillWeather JS compatibility -->
+        <span id="w-icon" style="display:none"></span>
+        <span id="w-temp" style="display:none"></span>
+        <span id="w-desc" style="display:none"></span>
+        <span id="w-wind" style="display:none"></span>
+        <span id="w-hum" style="display:none"></span>
+        <span id="w-rain" style="display:none"></span>
+        <span id="w-uv" style="display:none"></span>
+        <span id="w-vis" style="display:none"></span>
         <div id="golf-index-card"></div>
         <div class="section-label">🌧️ 비·바람 예보 레이더 (골프 특화)</div>
         <div class="radar-toggle">
@@ -448,22 +441,15 @@ header {
   </div>
 
   <div class="panel on" id="sp-weather">
-    <div class="w-card">
-      <div class="w-main">
-        <span class="w-big-icon" id="sw-icon"></span>
-        <div>
-          <div class="w-temp-big" id="sw-temp"></div>
-          <div class="w-desc" id="sw-desc"></div>
-        </div>
-      </div>
-      <div class="w-grid">
-        <div class="w-row"><span>💨</span><span id="sw-wind"></span></div>
-        <div class="w-row"><span>💧</span><span id="sw-hum"></span></div>
-        <div class="w-row"><span>🌧️</span><span id="sw-rain"></span></div>
-        <div class="w-row"><span>☀️</span><span id="sw-uv"></span></div>
-        <div class="w-row"><span>👁</span><span id="sw-vis"></span></div>
-      </div>
-    </div>
+    <!-- hidden spans for fillWeather JS compatibility -->
+    <span id="sw-icon" style="display:none"></span>
+    <span id="sw-temp" style="display:none"></span>
+    <span id="sw-desc" style="display:none"></span>
+    <span id="sw-wind" style="display:none"></span>
+    <span id="sw-hum" style="display:none"></span>
+    <span id="sw-rain" style="display:none"></span>
+    <span id="sw-uv" style="display:none"></span>
+    <span id="sw-vis" style="display:none"></span>
     <div id="s-golf-index-card"></div>
     <div class="section-label">🌧️ 비·바람 예보 레이더 (골프 특화)</div>
     <div class="radar-toggle">
@@ -780,14 +766,30 @@ function renderGolfIndex(cardId, weather) {
   const { total, label, tags } = calcGolfIndex(weather);
   const color = total >= 80 ? '#15803d' : total >= 55 ? '#ca8a04' : total >= 30 ? '#ea580c' : '#dc2626';
   el.innerHTML = `
-  <div class="golf-index">
-    <div class="golf-index-head">
-      <span class="golf-index-title">⛳ 골프 날씨 지수</span>
-      <span class="golf-index-score" style="color:${color}">${total}<small style="font-size:12px;font-weight:600;">/100</small></span>
+  <div class="golf-index" style="margin-bottom:10px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:30px;line-height:1;">${weather.icon}</span>
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.1;">${weather.temp}°C</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px;">${weather.desc}</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">골프 날씨 지수</div>
+        <span style="font-size:26px;font-weight:700;color:${color};">${total}<small style="font-size:12px;font-weight:600;">/100</small></span>
+      </div>
     </div>
-    <div class="golf-index-bar"><div class="golf-index-fill" style="width:${total}%;background:${color};"></div></div>
+    <div class="golf-index-bar" style="margin-bottom:4px;"><div class="golf-index-fill" style="width:${total}%;background:${color};"></div></div>
     <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:6px;">${label}</div>
-    <div class="golf-index-tags">${tags.map(t=>`<span class="golf-index-tag ${t.cls}">${t.label}</span>`).join('')}</div>
+    <div class="golf-index-tags" style="margin-bottom:8px;">${tags.map(t=>`<span class="golf-index-tag ${t.cls}">${t.label}</span>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>💨</span><span>${weather.wind}</span></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>💧</span><span>${weather.hum}</span></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>🌧️</span><span>${weather.rain || '–'}</span></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>☀️</span><span>${weather.uv}</span></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>👁</span><span>시야 ${weather.vis}</span></div>
+    </div>
   </div>`;
 }
 
