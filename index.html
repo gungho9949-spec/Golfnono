@@ -198,6 +198,14 @@ header {
   cursor: pointer; transition: opacity .2s;
 }
 .naver-info-btn:hover { opacity: .85; }
+.kakao-place-btn {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 1; padding: 9px 6px; background: #fee500; color: #391b1b;
+  font-weight: 700; font-size: 11px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity .2s;
+}
+.kakao-place-btn:hover { opacity: .85; }
+.food-loading { text-align: center; padding: 24px; color: #9ca3af; font-size: 13px; }
 .food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
 /* CCTV 버튼 */
@@ -518,10 +526,11 @@ function clearFoodOverlays() {
   foodOverlays.forEach(o => o.setMap(null));
   foodOverlays = []; foodPositions = {};
 }
-function addFoodMarkers(course) {
+function addFoodMarkers(course, restaurants) {
   foodPositions = {};
-  course.restaurants.forEach(r => {
-    const pos = getRestaurantPos(course, r);
+  const items = restaurants || course.restaurants;
+  items.forEach(r => {
+    const pos = (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : getRestaurantPos(course, r);
     foodPositions[r.rank] = pos;
     const el = document.createElement('div');
     el.innerHTML = `<div style="width:28px;height:28px;background:#22c55e;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">${r.rank}</div>`;
@@ -576,7 +585,6 @@ function fillDetail(c) {
   document.getElementById('d-temp').textContent = c.weather.temp + '°C';
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('w', c);
-  fillFood('food-list', c);
   fillCctv('windy-iframe', c);
   tab('weather');
 }
@@ -588,7 +596,6 @@ function fillSheet(c) {
   document.getElementById('s-temp').textContent = c.weather.temp + '°C';
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('sw', c);
-  fillFood('s-food-list', c);
   fillCctv('s-windy-iframe', c);
   stab('weather');
 }
@@ -702,29 +709,74 @@ function fillWeather(p, c) {
   document.getElementById(p+'-vis').textContent = '시야 ' + w.vis;
 }
 
-function fillFood(listId, c) {
-  document.getElementById(listId).innerHTML = c.restaurants.map(r => {
-    const pos = foodPositions[r.rank] || {};
-    const kakaoDirUrl = pos.lat
-      ? `https://map.kakao.com/link/to/${encodeURIComponent(r.name)},${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`
-      : `https://map.kakao.com/?q=${encodeURIComponent(r.name + ' ' + c.region)}`;
-    return `
-    <div class="food-card" data-rank="${r.rank}" onclick="cardClick(${r.rank})">
-      <div class="food-top">
-        <div class="rank">${r.rank}</div>
-        <div class="food-info">
-          <div class="food-name">${r.emoji} ${r.name}</div>
-          <div class="food-meta">${r.cat} · ${r.dist}</div>
-        </div>
-        <div class="food-price">${r.price}</div>
+const KAKAO_REST_KEY = '85715def05ece125da02d43e2e6fa85e';
+
+async function fetchRestaurants(c) {
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(
+      `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${c.lng}&y=${c.lat}&radius=5000&sort=rating`,
+      { headers: { 'Authorization': `KakaoAK ${KAKAO_REST_KEY}` }, signal: ctrl.signal }
+    );
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const places = (data.documents || []).slice(0, 3);
+    if (!places.length) throw new Error();
+    return places.map((p, i) => ({
+      rank: i + 1,
+      name: p.place_name,
+      cat: p.category_name.split(' > ').pop(),
+      dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
+      emoji: '🍽️',
+      badges: [p.road_address_name || p.address_name].filter(Boolean),
+      placeUrl: p.place_url,
+      lat: parseFloat(p.y),
+      lng: parseFloat(p.x),
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function renderFoodCard(r, c, isApi) {
+  const pos = foodPositions[r.rank] || {};
+  const kakaoDirUrl = pos.lat
+    ? `https://map.kakao.com/link/to/${encodeURIComponent(r.name)},${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`
+    : `https://map.kakao.com/?q=${encodeURIComponent(r.name + ' ' + c.region)}`;
+  const infoBtn = (isApi && r.placeUrl)
+    ? `<button class="kakao-place-btn" onclick="event.stopPropagation();window.open('${r.placeUrl}','_blank')">📍 카카오플레이스 식당정보</button>`
+    : `<button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region + ' 맛집')}','_blank')">🔍 네이버에서 식당 정보 보기</button>`;
+  const badgesHtml = (r.badges || []).map(b => `<span class="badge">${b}</span>`).join('');
+  return `
+  <div class="food-card" data-rank="${r.rank}" onclick="cardClick(${r.rank})">
+    <div class="food-top">
+      <div class="rank">${r.rank}</div>
+      <div class="food-info">
+        <div class="food-name">${r.emoji || '🍽️'} ${r.name}</div>
+        <div class="food-meta">${r.cat} · ${r.dist}</div>
       </div>
-      <div class="badges">${r.badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
-      <div class="food-btns">
-        <button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region + ' 맛집')}','_blank')">🔍 네이버에서 식당 정보 보기</button>
-        <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
-      </div>
-    </div>`;
-  }).join('');
+      ${r.price ? `<div class="food-price">${r.price}</div>` : ''}
+    </div>
+    ${badgesHtml ? `<div class="badges">${badgesHtml}</div>` : ''}
+    <div class="food-btns">
+      ${infoBtn}
+      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
+    </div>
+  </div>`;
+}
+
+async function loadFood(listId, c) {
+  const el = document.getElementById(listId);
+  el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
+  const apiResults = await fetchRestaurants(c);
+  const isApi = !!apiResults;
+  const restaurants = apiResults || c.restaurants;
+  clearFoodOverlays();
+  addFoodMarkers(c, restaurants);
+  el.innerHTML = restaurants.map(r => renderFoodCard(r, c, isApi)).join('');
+  const src = isApi ? '카카오 로컬 API' : '하드코딩 데이터 (폴백)';
+  el.insertAdjacentHTML('beforeend', `<p class="food-note">${src}</p>`);
 }
 
 function tab(id) {
@@ -733,9 +785,7 @@ function tab(id) {
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
-    clearFoodOverlays();
-    addFoodMarkers(activeCourse);
-    fillFood('food-list', activeCourse);
+    loadFood('food-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
@@ -746,9 +796,7 @@ function stab(id) {
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
-    clearFoodOverlays();
-    addFoodMarkers(activeCourse);
-    fillFood('s-food-list', activeCourse);
+    loadFood('s-food-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
