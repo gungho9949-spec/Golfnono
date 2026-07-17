@@ -266,13 +266,20 @@ header {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: #fff; border-radius: 20px 20px 0 0;
     transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
-    z-index: 1000; max-height: 82vh; overflow-y: auto;
-    box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+    z-index: 1000; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.12);
     display: block !important;
+    padding-bottom: env(safe-area-inset-bottom);
   }
   #sheet.open { transform: translateY(0); }
-  .sheet-handle { width: 36px; height: 4px; background: #d1d5db; border-radius: 2px; margin: 10px auto 0; }
-  .sheet-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; }
+  .sheet-handle {
+    width: 44px; height: 5px; background: #d1d5db; border-radius: 3px;
+    margin: 12px auto 4px; cursor: grab;
+  }
+  .sheet-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; }
+  .search-input { width: 130px; }
+  .cctv-player-wrap video { height: 150px; }
+  #s-windy-iframe { height: 180px !important; }
 }
 @media (min-width: 768px) { #sheet { display: none !important; } }
 </style>
@@ -353,8 +360,9 @@ header {
         <div class="cctv-player-wrap">
           <video id="cctv-video" muted playsinline></video>
           <div class="cctv-overlay" id="cctv-overlay">
-            <div class="cctv-spinner"></div>
+            <div class="cctv-spinner" id="cctv-spinner"></div>
             <span id="cctv-overlay-msg">CCTV 불러오는 중...</span>
+            <button id="cctv-retry-btn" style="display:none;margin-top:6px;padding:6px 14px;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;" onclick="retryCctv('cctv')">🔄 재시도</button>
           </div>
         </div>
         <div class="cctv-meta" id="cctv-meta"></div>
@@ -418,8 +426,9 @@ header {
     <div class="cctv-player-wrap">
       <video id="s-cctv-video" muted playsinline></video>
       <div class="cctv-overlay" id="s-cctv-overlay">
-        <div class="cctv-spinner"></div>
+        <div class="cctv-spinner" id="s-cctv-spinner"></div>
         <span id="s-cctv-overlay-msg">CCTV 불러오는 중...</span>
+        <button id="s-cctv-retry-btn" style="display:none;margin-top:6px;padding:6px 14px;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;" onclick="retryCctv('s-cctv')">🔄 재시도</button>
       </div>
     </div>
     <div class="cctv-meta" id="s-cctv-meta"></div>
@@ -693,8 +702,17 @@ function playCctv(url, name, distKm, videoId, overlayId, msgId, metaId) {
   if (msg) msg.textContent = 'CCTV 연결 중...';
   if (meta) meta.textContent = `📍 ${name}  ·  ${distKm.toFixed(1)}km`;
 
+  const prefix = videoId.startsWith('s-') ? 's-cctv' : 'cctv';
+  const retryBtn = document.getElementById(`${prefix}-retry-btn`);
+  const spinner = document.getElementById(`${prefix}-spinner`);
+  if (retryBtn) retryBtn.style.display = 'none';
+  if (spinner) spinner.style.display = 'block';
   const onReady = () => { if (overlay) overlay.classList.add('hidden'); video.play().catch(() => {}); };
-  const onErr = () => { if (msg) msg.textContent = '스트림 연결 실패'; };
+  const onErr = () => {
+    if (msg) msg.textContent = '스트림 연결 실패';
+    if (spinner) spinner.style.display = 'none';
+    if (retryBtn) retryBtn.style.display = 'block';
+  };
 
   if (typeof Hls !== 'undefined' && Hls.isSupported()) {
     const hls = new Hls({ enableWorker: false, lowLatencyMode: true });
@@ -721,7 +739,9 @@ async function fetchCctvList() {
     const res = await fetch('/api/cctv', { signal: ctrl.signal });
     if (!res.ok) throw new Error();
     const data = await res.json();
-    const list = Array.isArray(data) ? data : (data.list || data.data || data.result || data.cctvs || []);
+    const list = Array.isArray(data) ? data
+      : Array.isArray(data.list) ? data.list
+      : (data.data || data.result || data.cctvs || []);
     cctvCache = list;
     return list;
   } catch { return []; }
@@ -968,6 +988,37 @@ function stab(id) {
 function closeSheet() {
   document.getElementById('sheet').classList.remove('open');
 }
+
+/* ── CCTV 재시도 ── */
+function retryCctv(prefix) {
+  cctvCache = null;
+  if (activeCourse) {
+    const p = prefix === 'cctv' ? '' : 's-';
+    loadCctv(activeCourse, `${p}cctv-video`, `${p}cctv-select`, `${p}cctv-overlay`, `${p}cctv-overlay-msg`, `${p}cctv-meta`);
+  }
+}
+
+/* ── 바텀시트 스와이프 닫기 ── */
+(function() {
+  const sheet = document.getElementById('sheet');
+  let startY = 0, dragging = false;
+  sheet.addEventListener('touchstart', e => {
+    if (e.target.closest('.cctv-player-wrap, select, video, iframe')) return;
+    startY = e.touches[0].clientY; dragging = true;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  sheet.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    sheet.style.transform = '';
+    if (dy > 80) closeSheet();
+  });
+})();
 </script>
 </body>
 </html>
