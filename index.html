@@ -148,6 +148,29 @@ header {
 }
 .food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
+/* CCTV 버튼 */
+.cctv-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 15px 16px; margin-bottom: 10px;
+  border: none; border-radius: 12px; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
+  text-align: left; transition: opacity .2s, transform .1s;
+}
+.cctv-btn:hover { opacity: .88; }
+.cctv-btn:active { transform: scale(.98); }
+.cctv-btn-primary { background: #22c55e; color: #fff; }
+.cctv-btn-secondary { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+.cctv-btn-icon { font-size: 20px; flex-shrink: 0; }
+.cctv-btn-text { display: flex; flex-direction: column; gap: 2px; }
+.cctv-btn-sub { font-size: 11px; font-weight: 400; opacity: .8; }
+.mini-weather { display: flex; gap: 8px; margin-top: 16px; }
+.mini-chip {
+  flex: 1; background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 10px; padding: 10px 8px; text-align: center;
+}
+.mini-chip-icon { font-size: 18px; margin-bottom: 4px; }
+.mini-chip-val { font-size: 12px; color: #4b5563; font-weight: 500; }
+
 /* 모바일 */
 @media (max-width: 767px) {
   #sidebar { display: none; }
@@ -207,11 +230,36 @@ header {
       </div>
 
       <div class="tabs">
-        <button class="tab on" onclick="tab('weather')" id="t-weather">⛅ 날씨</button>
+        <button class="tab on" onclick="tab('cctv')" id="t-cctv">📹 CCTV</button>
+        <button class="tab" onclick="tab('weather')" id="t-weather">⛅ 날씨</button>
         <button class="tab" onclick="tab('food')" id="t-food">🍽️ 맛집</button>
       </div>
 
-      <div class="panel on" id="p-weather">
+      <div class="panel on" id="p-cctv">
+        <button class="cctv-btn cctv-btn-primary" id="naver-map-btn">
+          <span class="cctv-btn-icon">📹</span>
+          <span class="cctv-btn-text">
+            <span>네이버 지도에서 CCTV 확인</span>
+            <span class="cctv-btn-sub">골프장 인근 도로 상황 보기</span>
+          </span>
+          <span style="margin-left:auto;">→</span>
+        </button>
+        <button class="cctv-btn cctv-btn-secondary" onclick="window.open('https://its.go.kr/map/cctv','_blank')">
+          <span class="cctv-btn-icon">🚦</span>
+          <span class="cctv-btn-text">
+            <span>ITS 국가교통정보 CCTV</span>
+            <span class="cctv-btn-sub">전국 실시간 도로 영상</span>
+          </span>
+          <span style="margin-left:auto;">→</span>
+        </button>
+        <div class="mini-weather">
+          <div class="mini-chip"><div class="mini-chip-icon" id="mc-icon">⛅</div><div class="mini-chip-val" id="mc-desc">–</div></div>
+          <div class="mini-chip"><div class="mini-chip-icon">💨</div><div class="mini-chip-val" id="mc-wind">–</div></div>
+          <div class="mini-chip"><div class="mini-chip-icon">💧</div><div class="mini-chip-val" id="mc-hum">–</div></div>
+        </div>
+      </div>
+
+      <div class="panel" id="p-weather">
         <div class="w-card">
           <div class="w-main">
             <span class="w-big-icon" id="w-icon"></span>
@@ -258,11 +306,36 @@ header {
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="stab('weather')" id="st-weather">⛅ 날씨</button>
+    <button class="tab on" onclick="stab('cctv')" id="st-cctv">📹 CCTV</button>
+    <button class="tab" onclick="stab('weather')" id="st-weather">⛅ 날씨</button>
     <button class="tab" onclick="stab('food')" id="st-food">🍽️ 맛집</button>
   </div>
 
-  <div class="panel on" id="sp-weather">
+  <div class="panel on" id="sp-cctv">
+    <button class="cctv-btn cctv-btn-primary" id="s-naver-map-btn">
+      <span class="cctv-btn-icon">📹</span>
+      <span class="cctv-btn-text">
+        <span>네이버 지도에서 CCTV 확인</span>
+        <span class="cctv-btn-sub">골프장 인근 도로 상황 보기</span>
+      </span>
+      <span style="margin-left:auto;">→</span>
+    </button>
+    <button class="cctv-btn cctv-btn-secondary" onclick="window.open('https://its.go.kr/map/cctv','_blank')">
+      <span class="cctv-btn-icon">🚦</span>
+      <span class="cctv-btn-text">
+        <span>ITS 국가교통정보 CCTV</span>
+        <span class="cctv-btn-sub">전국 실시간 도로 영상</span>
+      </span>
+      <span style="margin-left:auto;">→</span>
+    </button>
+    <div class="mini-weather">
+      <div class="mini-chip"><div class="mini-chip-icon" id="smc-icon">⛅</div><div class="mini-chip-val" id="smc-desc">–</div></div>
+      <div class="mini-chip"><div class="mini-chip-icon">💨</div><div class="mini-chip-val" id="smc-wind">–</div></div>
+      <div class="mini-chip"><div class="mini-chip-icon">💧</div><div class="mini-chip-val" id="smc-hum">–</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="sp-weather">
     <div class="w-card">
       <div class="w-main">
         <span class="w-big-icon" id="sw-icon"></span>
@@ -427,7 +500,8 @@ function fillDetail(c) {
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('w', c);
   fillFood('food-list', c);
-  tab('weather');
+  fillCctv('mc', 'naver-map-btn', c);
+  tab('cctv');
   document.getElementById('windy-btn').onclick = () =>
     window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
 }
@@ -440,9 +514,19 @@ function fillSheet(c) {
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('sw', c);
   fillFood('s-food-list', c);
-  stab('weather');
+  fillCctv('smc', 's-naver-map-btn', c);
+  stab('cctv');
   document.getElementById('s-windy-btn').onclick = () =>
     window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
+}
+
+function fillCctv(prefix, btnId, c) {
+  document.getElementById(prefix+'-icon').textContent = c.weather.icon;
+  document.getElementById(prefix+'-desc').textContent = c.weather.desc;
+  document.getElementById(prefix+'-wind').textContent = c.weather.wind;
+  document.getElementById(prefix+'-hum').textContent = c.weather.hum;
+  document.getElementById(btnId).onclick = () =>
+    window.open(`https://map.naver.com/v5/?c=${c.lng},${c.lat},15,0,0,0,dh`, '_blank');
 }
 
 function fillWeather(p, c) {
@@ -475,13 +559,13 @@ function fillFood(listId, c) {
 }
 
 function tab(id) {
-  ['weather','food'].forEach(t => {
+  ['cctv','weather','food'].forEach(t => {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
 }
 function stab(id) {
-  ['weather','food'].forEach(t => {
+  ['cctv','weather','food'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
