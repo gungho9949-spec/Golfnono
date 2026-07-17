@@ -184,13 +184,21 @@ header {
   border: 1px solid #bbf7d0; border-radius: 99px;
   padding: 2px 8px; font-size: 10px; font-weight: 600;
 }
+.food-btns { display: flex; gap: 6px; }
 .kakao-dir-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; padding: 9px; background: #fee500; color: #391b1b;
-  font-weight: 700; font-size: 12px; border: none; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 1; padding: 9px 6px; background: #fee500; color: #391b1b;
+  font-weight: 700; font-size: 11px; border: none; border-radius: 8px;
   cursor: pointer; transition: opacity .2s;
 }
 .kakao-dir-btn:hover { opacity: .85; }
+.naver-info-btn {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 1; padding: 9px 6px; background: #03c75a; color: #fff;
+  font-weight: 700; font-size: 11px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity .2s;
+}
+.naver-info-btn:hover { opacity: .85; }
 .food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
 /* CCTV 버튼 */
@@ -736,7 +744,10 @@ function fillFood(listId, c) {
         <div class="food-price">${r.price}</div>
       </div>
       <div class="badges">${r.badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
-      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
+      <div class="food-btns">
+        <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵 길찾기</button>
+        <button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region)}','_blank')">🔍 네이버 식당정보</button>
+      </div>
     </div>`;
   }).join('');
 }
