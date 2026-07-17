@@ -421,9 +421,10 @@ const COURSES = [
 ];
 
 // 지도
-const map = L.map('map', { center: [36.8, 127.6], zoom: 7 });
-L.tileLayer('https://xdworld.vworld.kr/2d/Base/service/{z}/{x}/{y}.png', {
-  attribution: '© Vworld',
+const map = L.map('map', { center: [36.2, 127.8], zoom: 7 });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap contributors © CARTO',
+  subdomains: 'abcd',
   maxZoom: 19
 }).addTo(map);
 
