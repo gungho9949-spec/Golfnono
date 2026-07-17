@@ -457,8 +457,10 @@ function fillWeather(p, c) {
 }
 
 function fillFood(listId, c) {
-  document.getElementById(listId).innerHTML = c.restaurants.map(r => `
-    <div class="food-card">
+  document.getElementById(listId).innerHTML = c.restaurants.map(r => {
+    const url = `https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region)}`;
+    return `
+    <div class="food-card" onclick="window.open('${url}','_blank')" style="cursor:pointer;">
       <div class="food-top">
         <div class="rank rank-${r.rank}">${r.rank}</div>
         <div>
@@ -468,8 +470,8 @@ function fillFood(listId, c) {
         <div class="food-price">${r.price}</div>
       </div>
       <div class="badges">${r.badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function tab(id) {
