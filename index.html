@@ -302,7 +302,13 @@ header {
   }
   .sheet-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; }
   .search-input { width: 130px; }
-  .cctv-player-wrap video { height: 150px; }
+  .w-card { padding: 10px 12px !important; margin-bottom: 8px !important; }
+  .w-big-icon { font-size: 30px !important; }
+  .w-temp-big { font-size: 22px !important; }
+  .w-desc { font-size: 11px !important; }
+  .w-main { margin-bottom: 8px !important; }
+  .w-row { padding: 4px 0 !important; font-size: 12px !important; }
+  .cctv-player-wrap video { height: 230px !important; }
   #s-windy-iframe { height: 180px !important; }
 }
 @media (min-width: 768px) { #sheet { display: none !important; } }
@@ -416,6 +422,7 @@ header {
 <!-- 모바일 바텀시트 -->
 <div id="sheet">
   <div class="sheet-handle"></div>
+  <button onclick="closeSheet();goHome();" style="position:absolute;top:10px;left:14px;background:#f3f4f6;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;">← 지도로</button>
   <button class="sheet-close" onclick="closeSheet()">✕</button>
 
   <div class="d-head" style="margin-top:8px;">
