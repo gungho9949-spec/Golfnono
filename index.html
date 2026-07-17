@@ -662,7 +662,7 @@ function goHome() {
           activeMarker = marker;
           marker.setImage(activeImg);
           map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
-          map.setLevel(5);
+          map.setLevel(9);
           clearFoodOverlays();
           activeCourse = c;
           fetchWeather(c).then(weather => {
