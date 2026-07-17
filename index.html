@@ -311,7 +311,8 @@ header {
   .w-main { margin-bottom: 8px !important; }
   .w-row { padding: 4px 0 !important; font-size: 12px !important; }
   .cctv-player-wrap video { height: 230px !important; }
-  #s-windy-iframe { height: 180px !important; }
+  #s-windy-iframe { height: 260px !important; }
+  #windy-iframe { height: 260px; }
 }
 @media (min-width: 768px) { #sheet { display: none !important; } }
 </style>
@@ -723,7 +724,7 @@ function fillSheet(c) {
 }
 
 function windyUrl(lat, lng, overlay) {
-  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&zoom=11&level=surface&overlay=${overlay}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&detailLat=${lat}&detailLon=${lng}&width=650&height=450&zoom=11&level=surface&overlay=${overlay}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
 }
 function fillCctv(iframeId, c) {
   document.getElementById(iframeId).src = windyUrl(c.lat, c.lng, 'rain');
