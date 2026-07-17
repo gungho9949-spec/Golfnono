@@ -5,124 +5,186 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golfnono 골프노노</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; background: #0f2211; color: #e8eced; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f8; color: #1a1a1a; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* 헤더 */
-  header { height: 56px; background: #0a1a0c; border-bottom: 1px solid #2d5a30; display: flex; align-items: center; padding: 0 20px; gap: 10px; flex-shrink: 0; }
-  header h1 { font-size: 18px; font-weight: 700; color: #e8eced; }
-  header p { font-size: 11px; color: #607d8b; margin-top: 2px; }
-  .count-badge { margin-left: auto; background: rgba(74,158,80,.15); color: #4a9e50; border: 1px solid rgba(74,158,80,.3); border-radius: 99px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+/* 헤더 */
+header {
+  height: 56px; background: #fff; border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; padding: 0 20px; gap: 10px;
+  flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.logo-icon { font-size: 24px; }
+.logo-text { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+.logo-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+.count-badge {
+  margin-left: auto; background: #f0fdf4; color: #16a34a;
+  border: 1px solid #bbf7d0; border-radius: 99px;
+  padding: 3px 12px; font-size: 12px; font-weight: 600;
+}
 
-  /* 메인 */
-  .main { display: flex; flex: 1; overflow: hidden; }
+/* 메인 */
+.main { display: flex; flex: 1; overflow: hidden; }
 
-  /* 사이드바 */
-  #sidebar { width: 340px; min-width: 340px; background: #1e3f20; border-right: 1px solid #2d5a30; overflow-y: auto; display: flex; flex-direction: column; }
-  #sidebar::-webkit-scrollbar { width: 5px; }
-  #sidebar::-webkit-scrollbar-thumb { background: #2d5a30; border-radius: 3px; }
+/* 사이드바 */
+#sidebar {
+  width: 340px; min-width: 340px; background: #fff;
+  border-right: 1px solid #e5e7eb; overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0,0,0,.04);
+}
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 
-  /* 지도 */
-  #map { flex: 1; }
-  .leaflet-tile { filter: brightness(.82) saturate(.85); }
-  .leaflet-container { background: #111; }
+/* 지도 */
+#map { flex: 1; }
 
-  /* 마커 */
-  .gmarker { width: 14px; height: 14px; background: #4a9e50; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 3px rgba(74,158,80,.3); cursor: pointer; transition: transform .15s; }
-  .gmarker:hover, .gmarker.on { background: #c9a84c; box-shadow: 0 0 0 4px rgba(201,168,76,.35); transform: scale(1.5); }
+/* 마커 */
+.gmarker {
+  width: 14px; height: 14px; background: #22c55e;
+  border: 2.5px solid #fff; border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(34,197,94,.4);
+  cursor: pointer; transition: transform .15s;
+}
+.gmarker:hover, .gmarker.on {
+  background: #16a34a; transform: scale(1.5);
+  box-shadow: 0 3px 10px rgba(22,163,74,.5);
+}
 
-  /* 웰컴 */
-  #welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; text-align: center; gap: 12px; }
-  #welcome .ico { font-size: 56px; }
-  #welcome h2 { font-size: 16px; font-weight: 700; }
-  #welcome p { font-size: 13px; color: #607d8b; line-height: 1.7; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
-  .chip { background: rgba(74,158,80,.15); color: #4a9e50; border: 1px solid rgba(74,158,80,.25); border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+/* 웰컴 */
+#welcome {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; padding: 32px 24px;
+  text-align: center; gap: 10px;
+}
+#welcome .ico { font-size: 52px; }
+#welcome h2 { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+#welcome p { font-size: 13px; color: #6b7280; line-height: 1.75; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+.chip {
+  background: #f0fdf4; color: #16a34a;
+  border: 1px solid #bbf7d0; border-radius: 99px;
+  padding: 4px 12px; font-size: 11px; font-weight: 600;
+}
 
-  /* 상세 패널 */
-  #detail { display: none; flex-direction: column; }
+/* 상세 패널 */
+#detail { display: none; flex-direction: column; }
 
-  /* 골프장 헤더 */
-  .d-head { padding: 16px; border-bottom: 1px solid #2d5a30; }
-  .d-top { display: flex; align-items: flex-start; gap: 12px; }
-  .d-icon { font-size: 36px; line-height: 1; }
-  .d-info { flex: 1; min-width: 0; }
-  .d-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .d-region { font-size: 11px; color: #607d8b; margin-top: 2px; }
-  .d-rating { font-size: 12px; color: #c9a84c; margin-top: 4px; }
-  .d-temp { font-size: 24px; font-weight: 700; flex-shrink: 0; }
-  .d-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-  .tag { background: rgba(74,158,80,.12); color: #4a9e50; border: 1px solid rgba(74,158,80,.2); border-radius: 99px; padding: 2px 8px; font-size: 11px; }
+/* 골프장 헤더 */
+.d-head { padding: 16px 16px 14px; border-bottom: 1px solid #f3f4f6; }
+.d-top { display: flex; align-items: flex-start; gap: 12px; }
+.d-icon { font-size: 34px; line-height: 1; }
+.d-info { flex: 1; min-width: 0; }
+.d-name { font-size: 16px; font-weight: 700; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-region { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+.d-rating { font-size: 12px; color: #f59e0b; margin-top: 4px; font-weight: 600; }
+.d-temp { font-size: 26px; font-weight: 700; color: #1a1a1a; flex-shrink: 0; }
+.d-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.tag {
+  background: #f9fafb; color: #374151;
+  border: 1px solid #e5e7eb; border-radius: 6px;
+  padding: 2px 8px; font-size: 11px; font-weight: 500;
+}
 
-  /* 탭 */
-  .tabs { display: flex; border-bottom: 1px solid #2d5a30; background: rgba(0,0,0,.2); position: sticky; top: 0; z-index: 5; }
-  .tab { flex: 1; padding: 10px 4px; font-size: 12px; font-weight: 600; color: #607d8b; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .2s; }
-  .tab.on { color: #c9a84c; border-bottom-color: #c9a84c; }
-  .tab:hover:not(.on) { color: #b0bec5; }
+/* 탭 */
+.tabs {
+  display: flex; border-bottom: 1px solid #e5e7eb;
+  background: #fff; position: sticky; top: 0; z-index: 5;
+}
+.tab {
+  flex: 1; padding: 11px 4px; font-size: 13px; font-weight: 600;
+  color: #9ca3af; background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer; transition: all .2s;
+}
+.tab.on { color: #22c55e; border-bottom-color: #22c55e; }
+.tab:hover:not(.on) { color: #374151; }
 
-  /* 패널 공통 */
-  .panel { padding: 16px; display: none; }
-  .panel.on { display: block; }
+/* 패널 */
+.panel { padding: 16px; display: none; }
+.panel.on { display: block; }
 
-  /* 날씨 패널 */
-  .w-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .w-main { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .w-big-icon { font-size: 48px; }
-  .w-temp-big { font-size: 32px; font-weight: 700; }
-  .w-desc { font-size: 13px; color: #b0bec5; margin-top: 2px; }
-  .w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .w-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b0bec5; }
-  .windy-btn { display: block; width: 100%; padding: 12px; background: #c9a84c; color: #0f2211; font-weight: 700; font-size: 13px; border: none; border-radius: 10px; cursor: pointer; transition: opacity .2s; }
-  .windy-btn:hover { opacity: .88; }
+/* 날씨 */
+.w-card {
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 12px; padding: 16px; margin-bottom: 12px;
+}
+.w-main { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.w-big-icon { font-size: 46px; line-height: 1; }
+.w-temp-big { font-size: 32px; font-weight: 700; color: #1a1a1a; }
+.w-desc { font-size: 13px; color: #6b7280; margin-top: 3px; }
+.w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.w-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; }
+.windy-btn {
+  display: block; width: 100%; padding: 12px;
+  background: #22c55e; color: #fff; font-weight: 700; font-size: 13px;
+  border: none; border-radius: 10px; cursor: pointer; transition: background .2s;
+}
+.windy-btn:hover { background: #16a34a; }
 
-  /* 맛집 패널 */
-  .food-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-  .food-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-  .rank-1 { background: #c9a84c; color: #0f2211; }
-  .rank-2 { background: #8ca0a8; color: #0f2211; }
-  .rank-3 { background: #8c6e3a; color: #fff; }
-  .food-name { font-size: 14px; font-weight: 700; }
-  .food-meta { font-size: 11px; color: #607d8b; margin-top: 1px; }
-  .food-price { margin-left: auto; font-size: 12px; font-weight: 700; color: #c9a84c; flex-shrink: 0; }
-  .badges { display: flex; flex-wrap: wrap; gap: 4px; }
-  .badge { background: rgba(74,158,80,.12); color: #4a9e50; border: 1px solid rgba(74,158,80,.2); border-radius: 99px; padding: 2px 7px; font-size: 10px; font-weight: 600; }
-  .food-note { text-align: center; font-size: 11px; color: #607d8b; margin-top: 4px; }
+/* 맛집 */
+.food-card {
+  background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 12px; padding: 14px; margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.food-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rank {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.rank-1 { background: #fef3c7; color: #92400e; }
+.rank-2 { background: #f3f4f6; color: #374151; }
+.rank-3 { background: #fdf2f8; color: #7c3aed; }
+.food-name { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+.food-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.food-price { margin-left: auto; font-size: 12px; font-weight: 700; color: #22c55e; flex-shrink: 0; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.badge {
+  background: #f0fdf4; color: #16a34a;
+  border: 1px solid #bbf7d0; border-radius: 99px;
+  padding: 2px 8px; font-size: 10px; font-weight: 600;
+}
+.food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
-  /* 모바일 */
-  @media (max-width: 767px) {
-    #sidebar { display: none; }
-    #map { width: 100%; }
-    #sheet { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3f20; border-radius: 18px 18px 0 0; transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1); z-index: 1000; max-height: 82vh; overflow-y: auto; display: block !important; }
-    #sheet.open { transform: translateY(0); }
-    .sheet-handle { width: 36px; height: 4px; background: #4a9e50; border-radius: 2px; margin: 10px auto 0; }
-    .sheet-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #607d8b; font-size: 20px; cursor: pointer; }
+/* 모바일 */
+@media (max-width: 767px) {
+  #sidebar { display: none; }
+  #map { width: 100%; }
+  #sheet {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; border-radius: 20px 20px 0 0;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
+    z-index: 1000; max-height: 82vh; overflow-y: auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+    display: block !important;
   }
-  @media (min-width: 768px) { #sheet { display: none !important; } }
+  #sheet.open { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: #d1d5db; border-radius: 2px; margin: 10px auto 0; }
+  .sheet-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #9ca3af; font-size: 20px; cursor: pointer; }
+}
+@media (min-width: 768px) { #sheet { display: none !important; } }
 </style>
 </head>
 <body>
 
 <header>
-  <span style="font-size:26px;">⛳</span>
+  <span class="logo-icon">⛳</span>
   <div>
-    <h1>Golfnono</h1>
-    <p>실시간 날씨 · 맛집</p>
+    <div class="logo-text">Golfnono</div>
+    <div class="logo-sub">실시간 날씨 · 맛집</div>
   </div>
   <span class="count-badge" id="cnt">0개</span>
 </header>
 
 <div class="main">
 
-  <!-- 사이드바 (데스크톱) -->
   <div id="sidebar">
-
     <div id="welcome">
       <div class="ico">🗺️</div>
       <h2>골프장을 선택하세요</h2>
-      <p>지도의 녹색 마커를 클릭하면<br>날씨와 맛집 정보가 나타납니다.</p>
+      <p>지도의 녹색 마커를 클릭하면<br>날씨와 맛집 정보를 확인할 수 있어요.</p>
       <div class="chips">
         <span class="chip">⛅ 날씨</span>
         <span class="chip">🍽️ 맛집 Top3</span>
@@ -227,7 +289,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── 데이터 ──────────────────────────────────────────────────────
 const COURSES = [
   {
     id: 'nambu', name: '남부 컨트리클럽', region: '경기도 용인시',
@@ -235,9 +296,9 @@ const COURSES = [
     tags: ['36홀', '퍼블릭', '챔피언십'],
     weather: { icon:'⛅', temp:23, desc:'구름 조금', wind:'북서 4m/s', hum:'52%', uv:'UV 5 (보통)', vis:'20km' },
     restaurants: [
-      { rank:1, emoji:'🥩', name:'용인왕갈비',    cat:'한식·갈비',   dist:'1.2km', price:'35,000원~', badges:['T-map 1위','13-15시 42%','주차 완비'] },
+      { rank:1, emoji:'🥩', name:'용인왕갈비',     cat:'한식·갈비',   dist:'1.2km', price:'35,000원~', badges:['T-map 1위','13-15시 42%','주차 완비'] },
       { rank:2, emoji:'🌿', name:'미나리 두부마을', cat:'한식·두부',   dist:'2.1km', price:'18,000원~', badges:['카드결제 급증','줄서는 맛집','예약 가능'] },
-      { rank:3, emoji:'🍜', name:'우리손칼국수',   cat:'분식·칼국수', dist:'0.8km', price:'12,000원~', badges:['가성비 1위','대기 없음','단체석'] },
+      { rank:3, emoji:'🍜', name:'우리손칼국수',    cat:'분식·칼국수', dist:'0.8km', price:'12,000원~', badges:['가성비 1위','대기 없음','단체석'] },
     ],
   },
   {
@@ -279,20 +340,21 @@ const COURSES = [
     tags: ['18홀', '퍼블릭', '해변코스'],
     weather: { icon:'🌊', temp:21, desc:'흐리고 바람', wind:'서 8m/s', hum:'74%', uv:'UV 3 (보통)', vis:'12km' },
     restaurants: [
-      { rank:1, emoji:'🐟', name:'영종 활어회 센터', cat:'해산물·회',  dist:'3.1km', price:'55,000원~', badges:['T-map 1위','13-15시 35%','주차 완비'] },
-      { rank:2, emoji:'🦐', name:'을왕리 해물찜',   cat:'해산물·찜',  dist:'4.0km', price:'40,000원~', badges:['SNS 핫플','예약 권장','오션뷰'] },
+      { rank:1, emoji:'🐟', name:'영종 활어회 센터', cat:'해산물·회',   dist:'3.1km', price:'55,000원~', badges:['T-map 1위','13-15시 35%','주차 완비'] },
+      { rank:2, emoji:'🦐', name:'을왕리 해물찜',   cat:'해산물·찜',   dist:'4.0km', price:'40,000원~', badges:['SNS 핫플','예약 권장','오션뷰'] },
       { rank:3, emoji:'🦪', name:'영종 조개구이',   cat:'해산물·조개', dist:'2.5km', price:'30,000원~', badges:['로컬 1위','대기 15분','야외 테이블'] },
     ],
   },
 ];
 
-// ── 지도 ────────────────────────────────────────────────────────
+// 지도
 const map = L.map('map', { center: [36.8, 127.6], zoom: 7 });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap', maxZoom: 19
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap contributors © CARTO',
+  maxZoom: 19
 }).addTo(map);
 
-// ── 마커 ────────────────────────────────────────────────────────
+// 마커
 let activeEl = null;
 document.getElementById('cnt').textContent = COURSES.length + '개';
 
@@ -305,13 +367,11 @@ COURSES.forEach(c => {
   }).addTo(map).on('click', () => select(c, el));
 });
 
-// ── 선택 ────────────────────────────────────────────────────────
 function select(c, el) {
   if (activeEl) activeEl.classList.remove('on');
   activeEl = el;
   el.classList.add('on');
   map.panTo([c.lat, c.lng]);
-
   if (window.innerWidth < 768) {
     fillSheet(c);
     document.getElementById('sheet').classList.add('open');
@@ -320,22 +380,18 @@ function select(c, el) {
   }
 }
 
-// ── 사이드바 채우기 ─────────────────────────────────────────────
 function fillDetail(c) {
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('detail').style.display = 'flex';
-
   document.getElementById('d-icon').textContent = c.weather.icon;
   document.getElementById('d-name').textContent = c.name;
   document.getElementById('d-region').textContent = c.region;
   document.getElementById('d-rating').textContent = '★'.repeat(Math.round(c.rating)) + '  ' + c.rating.toFixed(1);
   document.getElementById('d-temp').textContent = c.weather.temp + '°C';
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
-
   fillWeather('w', c);
   fillFood('food-list', c);
   tab('weather');
-
   document.getElementById('windy-btn').onclick = () =>
     window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
 }
@@ -346,24 +402,22 @@ function fillSheet(c) {
   document.getElementById('s-region').textContent = c.region;
   document.getElementById('s-temp').textContent = c.weather.temp + '°C';
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
-
   fillWeather('sw', c);
   fillFood('s-food-list', c);
   stab('weather');
-
   document.getElementById('s-windy-btn').onclick = () =>
     window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
 }
 
-function fillWeather(prefix, c) {
+function fillWeather(p, c) {
   const w = c.weather;
-  document.getElementById(prefix + '-icon').textContent = w.icon;
-  document.getElementById(prefix + '-temp').textContent = w.temp + '°C';
-  document.getElementById(prefix + '-desc').textContent = w.desc;
-  document.getElementById(prefix + '-wind').textContent = w.wind;
-  document.getElementById(prefix + '-hum').textContent = w.hum;
-  document.getElementById(prefix + '-uv').textContent = w.uv;
-  document.getElementById(prefix + '-vis').textContent = '시야 ' + w.vis;
+  document.getElementById(p+'-icon').textContent = w.icon;
+  document.getElementById(p+'-temp').textContent = w.temp + '°C';
+  document.getElementById(p+'-desc').textContent = w.desc;
+  document.getElementById(p+'-wind').textContent = w.wind;
+  document.getElementById(p+'-hum').textContent = w.hum;
+  document.getElementById(p+'-uv').textContent = w.uv;
+  document.getElementById(p+'-vis').textContent = '시야 ' + w.vis;
 }
 
 function fillFood(listId, c) {
@@ -382,17 +436,16 @@ function fillFood(listId, c) {
   `).join('');
 }
 
-// ── 탭 전환 ─────────────────────────────────────────────────────
 function tab(id) {
-  ['weather', 'food'].forEach(t => {
-    document.getElementById('t-' + t).classList.toggle('on', t === id);
-    document.getElementById('p-' + t).classList.toggle('on', t === id);
+  ['weather','food'].forEach(t => {
+    document.getElementById('t-'+t).classList.toggle('on', t===id);
+    document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
 }
 function stab(id) {
-  ['weather', 'food'].forEach(t => {
-    document.getElementById('st-' + t).classList.toggle('on', t === id);
-    document.getElementById('sp-' + t).classList.toggle('on', t === id);
+  ['weather','food'].forEach(t => {
+    document.getElementById('st-'+t).classList.toggle('on', t===id);
+    document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
 }
 function closeSheet() {
