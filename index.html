@@ -511,6 +511,7 @@ async function fetchWeather(c) {
 
 let foodOverlays = [];
 let foodPositions = {};
+let foodRadiusCircle = null;
 const FOOD_ANGLES = [50, 160, 280];
 let activeCourse = null;
 
@@ -525,6 +526,21 @@ function getRestaurantPos(course, r) {
 function clearFoodOverlays() {
   foodOverlays.forEach(o => o.setMap(null));
   foodOverlays = []; foodPositions = {};
+  if (foodRadiusCircle) { foodRadiusCircle.setMap(null); foodRadiusCircle = null; }
+}
+function showRadiusCircle(course) {
+  if (foodRadiusCircle) { foodRadiusCircle.setMap(null); foodRadiusCircle = null; }
+  foodRadiusCircle = new kakao.maps.Circle({
+    center: new kakao.maps.LatLng(course.lat, course.lng),
+    radius: 5000,
+    strokeWeight: 1.5,
+    strokeColor: '#22c55e',
+    strokeOpacity: 0.5,
+    strokeStyle: 'dashed',
+    fillColor: '#22c55e',
+    fillOpacity: 0.04,
+  });
+  foodRadiusCircle.setMap(map);
 }
 function addFoodMarkers(course, restaurants) {
   foodPositions = {};
@@ -773,6 +789,7 @@ async function loadFood(listId, c) {
   const isApi = !!apiResults;
   const restaurants = apiResults || c.restaurants;
   clearFoodOverlays();
+  showRadiusCircle(c);
   addFoodMarkers(c, restaurants);
   el.innerHTML = restaurants.map(r => renderFoodCard(r, c, isApi)).join('');
   const src = isApi ? '카카오 로컬 API' : '하드코딩 데이터 (폴백)';
