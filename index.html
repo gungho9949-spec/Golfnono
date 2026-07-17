@@ -373,18 +373,20 @@ header {
           <div class="w-grid">
             <div class="w-row"><span>💨</span><span id="w-wind"></span></div>
             <div class="w-row"><span>💧</span><span id="w-hum"></span></div>
+            <div class="w-row"><span>🌧️</span><span id="w-rain"></span></div>
             <div class="w-row"><span>☀️</span><span id="w-uv"></span></div>
             <div class="w-row"><span>👁</span><span id="w-vis"></span></div>
           </div>
         </div>
         <div id="golf-index-card"></div>
-        <div class="section-label">⛳ 골프 날씨 레이더</div>
+        <div class="section-label">🌧️ 비·바람 예보 레이더 (골프 특화)</div>
         <div class="radar-toggle">
-          <button class="r-btn on" onclick="setRadarOverlay('wind','windy-iframe',this)">🌬️ 바람</button>
-          <button class="r-btn" onclick="setRadarOverlay('rain','windy-iframe',this)">🌧️ 강수</button>
+          <button class="r-btn" onclick="setRadarOverlay('wind','windy-iframe',this)">🌬️ 바람</button>
+          <button class="r-btn on" onclick="setRadarOverlay('rain','windy-iframe',this)">🌧️ 강수</button>
           <button class="r-btn" onclick="setRadarOverlay('temp','windy-iframe',this)">🌡️ 기온</button>
         </div>
-        <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
+        <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:6px;"></iframe>
+        <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
         <div class="section-label">📹 인근 도로 CCTV 실시간</div>
         <select class="cctv-select" id="cctv-select"></select>
         <div class="cctv-player-wrap">
@@ -445,18 +447,20 @@ header {
       <div class="w-grid">
         <div class="w-row"><span>💨</span><span id="sw-wind"></span></div>
         <div class="w-row"><span>💧</span><span id="sw-hum"></span></div>
+        <div class="w-row"><span>🌧️</span><span id="sw-rain"></span></div>
         <div class="w-row"><span>☀️</span><span id="sw-uv"></span></div>
         <div class="w-row"><span>👁</span><span id="sw-vis"></span></div>
       </div>
     </div>
     <div id="s-golf-index-card"></div>
-    <div class="section-label">⛳ 골프 날씨 레이더</div>
+    <div class="section-label">🌧️ 비·바람 예보 레이더 (골프 특화)</div>
     <div class="radar-toggle">
-      <button class="r-btn on" onclick="setRadarOverlay('wind','s-windy-iframe',this)">🌬️ 바람</button>
-      <button class="r-btn" onclick="setRadarOverlay('rain','s-windy-iframe',this)">🌧️ 강수</button>
+      <button class="r-btn" onclick="setRadarOverlay('wind','s-windy-iframe',this)">🌬️ 바람</button>
+      <button class="r-btn on" onclick="setRadarOverlay('rain','s-windy-iframe',this)">🌧️ 강수</button>
       <button class="r-btn" onclick="setRadarOverlay('temp','s-windy-iframe',this)">🌡️ 기온</button>
     </div>
-    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
+    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:6px;"></iframe>
+    <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
     <div class="section-label">📹 인근 도로 CCTV 실시간</div>
     <select class="cctv-select" id="s-cctv-select"></select>
     <div class="cctv-player-wrap">
@@ -482,7 +486,7 @@ const COURSES = [
     id: 'nambu', name: '남부 컨트리클럽', region: '경기도 용인시',
     lat: 37.2403, lng: 127.1944, holes: 36, type: '퍼블릭', rating: 4.8,
     tags: ['36홀', '퍼블릭', '챔피언십'],
-    weather: { icon:'⛅', temp:23, desc:'구름 조금', wind:'북서 4m/s', hum:'52%', uv:'UV 5 (보통)', vis:'20km' },
+    weather: { icon:'⛅', temp:23, desc:'구름 조금', wind:'북서 4m/s', hum:'52%', uv:'UV 5 (보통)', vis:'20km', rain:'강수확률 15%' },
     restaurants: [
       { rank:1, emoji:'🥩', name:'용인왕갈비',     cat:'한식·갈비',   dist:'1.2km', price:'35,000원~', badges:['T-map 1위','13-15시 42%','주차 완비'] },
       { rank:2, emoji:'🌿', name:'미나리 두부마을', cat:'한식·두부',   dist:'2.1km', price:'18,000원~', badges:['카드결제 급증','줄서는 맛집','예약 가능'] },
@@ -493,7 +497,7 @@ const COURSES = [
     id: 'gapyeong', name: '가평 베네스트 GC', region: '경기도 가평군',
     lat: 37.8142, lng: 127.5110, holes: 18, type: '프라이빗', rating: 4.9,
     tags: ['18홀', '프라이빗', '산악코스'],
-    weather: { icon:'🌤', temp:19, desc:'맑음', wind:'동 2m/s', hum:'45%', uv:'UV 4 (보통)', vis:'25km' },
+    weather: { icon:'🌤', temp:19, desc:'맑음', wind:'동 2m/s', hum:'45%', uv:'UV 4 (보통)', vis:'25km', rain:'강수확률 5%' },
     restaurants: [
       { rank:1, emoji:'🫘', name:'가평잣두부마을', cat:'한식·두부',   dist:'2.3km', price:'22,000원~', badges:['T-map 1위','13-15시 38%','주차 완비'] },
       { rank:2, emoji:'🍗', name:'산골닭갈비',    cat:'한식·닭갈비', dist:'1.5km', price:'16,000원~', badges:['블로거 추천','웨이팅 있음','예약 불가'] },
@@ -504,7 +508,7 @@ const COURSES = [
     id: 'wellington', name: '웰링턴 CC', region: '경기도 광주시',
     lat: 37.4072, lng: 127.3421, holes: 27, type: '프라이빗', rating: 4.7,
     tags: ['27홀', '프라이빗', '구릉코스'],
-    weather: { icon:'🌧', temp:17, desc:'비', wind:'남서 6m/s', hum:'82%', uv:'UV 1 (낮음)', vis:'8km' },
+    weather: { icon:'🌧', temp:17, desc:'비', wind:'남서 6m/s', hum:'82%', uv:'UV 1 (낮음)', vis:'8km', rain:'강수확률 80%' },
     restaurants: [
       { rank:1, emoji:'🥩', name:'광주 한우명가',   cat:'한식·한우',   dist:'1.8km', price:'65,000원~', badges:['T-map 1위','13-15시 51%','발렛 가능'] },
       { rank:2, emoji:'🍲', name:'초월 순두부찌개', cat:'한식·두부',   dist:'0.9km', price:'10,000원~', badges:['로컬 맛집','대기 없음','단체 가능'] },
@@ -515,7 +519,7 @@ const COURSES = [
     id: 'trinity', name: '트리니티 클럽', region: '강원도 홍천군',
     lat: 37.6693, lng: 127.9124, holes: 18, type: '프라이빗', rating: 4.8,
     tags: ['18홀', '프라이빗', '리조트형'],
-    weather: { icon:'🌥', temp:15, desc:'흐림', wind:'북동 3m/s', hum:'68%', uv:'UV 2 (낮음)', vis:'15km' },
+    weather: { icon:'🌥', temp:15, desc:'흐림', wind:'북동 3m/s', hum:'68%', uv:'UV 2 (낮음)', vis:'15km', rain:'강수확률 35%' },
     restaurants: [
       { rank:1, emoji:'🥩', name:'홍천 한우 직판장', cat:'한식·한우',   dist:'5.0km', price:'45,000원~', badges:['T-map 1위','13-15시 47%','주차 완비'] },
       { rank:2, emoji:'🍜', name:'강원 메밀국수',    cat:'분식·국수',   dist:'2.7km', price:'11,000원~', badges:['강원 향토음식','대기 없음','포장 가능'] },
@@ -526,7 +530,7 @@ const COURSES = [
     id: 'trius', name: '트리우스 골프클럽', region: '인천광역시 영종도',
     lat: 37.4844, lng: 126.4830, holes: 18, type: '퍼블릭', rating: 4.6,
     tags: ['18홀', '퍼블릭', '해변코스'],
-    weather: { icon:'🌊', temp:21, desc:'흐리고 바람', wind:'서 8m/s', hum:'74%', uv:'UV 3 (보통)', vis:'12km' },
+    weather: { icon:'🌊', temp:21, desc:'흐리고 바람', wind:'서 8m/s', hum:'74%', uv:'UV 3 (보통)', vis:'12km', rain:'강수확률 45%' },
     restaurants: [
       { rank:1, emoji:'🐟', name:'영종 활어회 센터', cat:'해산물·회',   dist:'3.1km', price:'55,000원~', badges:['T-map 1위','13-15시 35%','주차 완비'] },
       { rank:2, emoji:'🦐', name:'을왕리 해물찜',   cat:'해산물·찜',   dist:'4.0km', price:'40,000원~', badges:['SNS 핫플','예약 권장','오션뷰'] },
@@ -708,10 +712,10 @@ function fillSheet(c) {
 }
 
 function windyUrl(lat, lng, overlay) {
-  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&zoom=11&level=surface&overlay=${overlay}&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&zoom=11&level=surface&overlay=${overlay}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
 }
 function fillCctv(iframeId, c) {
-  document.getElementById(iframeId).src = windyUrl(c.lat, c.lng, 'wind');
+  document.getElementById(iframeId).src = windyUrl(c.lat, c.lng, 'rain');
 }
 function setRadarOverlay(overlay, iframeId, btn) {
   const iframe = document.getElementById(iframeId);
@@ -981,6 +985,7 @@ function fillWeather(p, c) {
   document.getElementById(p+'-desc').textContent = w.desc;
   document.getElementById(p+'-wind').textContent = w.wind;
   document.getElementById(p+'-hum').textContent = w.hum;
+  document.getElementById(p+'-rain').textContent = w.rain || '–';
   document.getElementById(p+'-uv').textContent = w.uv;
   document.getElementById(p+'-vis').textContent = '시야 ' + w.vis;
 }
