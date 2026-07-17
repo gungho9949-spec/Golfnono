@@ -291,10 +291,7 @@ header {
     background: #fff; border-radius: 20px 20px 0 0;
     transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
     z-index: 1000; max-height: 90vh; overflow-y: auto;
-    display: flex;
-    flex-direction: column;
     box-shadow: 0 -4px 24px rgba(0,0,0,.12);
-    display: block !important;
     padding-bottom: env(safe-area-inset-bottom);
   }
   #sheet.open { transform: translateY(0); }
@@ -721,7 +718,7 @@ function fillCctv(iframeId, c) {
   if (!iframe) return;
   const url = windyUrl(c.lat, c.lng, 'rain');
   iframe.src = '';
-  setTimeout(() => { iframe.src = url; }, 100);
+  setTimeout(() => { iframe.src = url; }, 300);
 }
 function setRadarOverlay(overlay, iframeId, btn) {
   const iframe = document.getElementById(iframeId);
@@ -766,29 +763,29 @@ function renderGolfIndex(cardId, weather) {
   const { total, label, tags } = calcGolfIndex(weather);
   const color = total >= 80 ? '#15803d' : total >= 55 ? '#ca8a04' : total >= 30 ? '#ea580c' : '#dc2626';
   el.innerHTML = `
-  <div class="golf-index" style="margin-bottom:10px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:30px;line-height:1;">${weather.icon}</span>
+  <div class="golf-index" style="margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:22px;line-height:1;">${weather.icon}</span>
         <div>
-          <div style="font-size:22px;font-weight:700;color:#1a1a1a;line-height:1.1;">${weather.temp}°C</div>
-          <div style="font-size:12px;color:#6b7280;margin-top:2px;">${weather.desc}</div>
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.1;">${weather.temp}°C</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:1px;">${weather.desc}</div>
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">골프 날씨 지수</div>
-        <span style="font-size:26px;font-weight:700;color:${color};">${total}<small style="font-size:12px;font-weight:600;">/100</small></span>
+        <div style="font-size:10px;color:#6b7280;margin-bottom:1px;">골프 날씨 지수</div>
+        <span style="font-size:20px;font-weight:700;color:${color};">${total}<small style="font-size:11px;font-weight:600;">/100</small></span>
       </div>
     </div>
-    <div class="golf-index-bar" style="margin-bottom:4px;"><div class="golf-index-fill" style="width:${total}%;background:${color};"></div></div>
-    <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:6px;">${label}</div>
-    <div class="golf-index-tags" style="margin-bottom:8px;">${tags.map(t=>`<span class="golf-index-tag ${t.cls}">${t.label}</span>`).join('')}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>💨</span><span>${weather.wind}</span></div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>💧</span><span>${weather.hum}</span></div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>🌧️</span><span>${weather.rain || '–'}</span></div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>☀️</span><span>${weather.uv}</span></div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563;"><span>👁</span><span>시야 ${weather.vis}</span></div>
+    <div class="golf-index-bar" style="margin-bottom:3px;"><div class="golf-index-fill" style="width:${total}%;background:${color};"></div></div>
+    <div style="font-size:10px;font-weight:700;color:${color};margin-bottom:4px;">${label}</div>
+    <div class="golf-index-tags" style="margin-bottom:6px;">${tags.map(t=>`<span class="golf-index-tag ${t.cls}">${t.label}</span>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#4b5563;"><span>💨</span><span>${weather.wind}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#4b5563;"><span>💧</span><span>${weather.hum}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#4b5563;"><span>🌧️</span><span>${weather.rain || '–'}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#4b5563;"><span>☀️</span><span>${weather.uv}</span></div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#4b5563;"><span>👁</span><span>시야 ${weather.vis}</span></div>
     </div>
   </div>`;
 }
