@@ -151,12 +151,11 @@ header {
 .w-desc { font-size: 13px; color: #6b7280; margin-top: 3px; }
 .w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .w-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; }
-.windy-btn {
-  display: block; width: 100%; padding: 12px;
-  background: #22c55e; color: #fff; font-weight: 700; font-size: 13px;
-  border: none; border-radius: 10px; cursor: pointer; transition: background .2s;
+.section-label {
+  font-size: 13px; font-weight: 600; color: #374151;
+  margin: 14px 0 8px; padding-bottom: 6px;
+  border-bottom: 1px solid #f3f4f6;
 }
-.windy-btn:hover { background: #16a34a; }
 
 /* 맛집 */
 .food-card {
@@ -292,25 +291,11 @@ header {
       </div>
 
       <div class="tabs">
-        <button class="tab on" onclick="tab('cctv')" id="t-cctv">📹 CCTV</button>
-        <button class="tab" onclick="tab('weather')" id="t-weather">⛅ 날씨</button>
+        <button class="tab on" onclick="tab('weather')" id="t-weather">🌤 날씨·현장</button>
         <button class="tab" onclick="tab('food')" id="t-food">🍽️ 맛집</button>
       </div>
 
-      <div class="panel on" id="p-cctv">
-        <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">🌤 실시간 바람/날씨 레이더</div>
-        <iframe id="windy-iframe" frameborder="0" style="width:100%;height:250px;border-radius:8px;border:none;"></iframe>
-        <button class="cctv-btn cctv-btn-secondary" style="margin-top:10px;" onclick="window.open('https://its.go.kr/map/cctv','_blank')">
-          <span class="cctv-btn-icon">🚦</span>
-          <span class="cctv-btn-text">
-            <span>ITS CCTV 확인</span>
-            <span class="cctv-btn-sub">전국 실시간 도로 영상</span>
-          </span>
-          <span style="margin-left:auto;">→</span>
-        </button>
-      </div>
-
-      <div class="panel" id="p-weather">
+      <div class="panel on" id="p-weather">
         <div class="w-card">
           <div class="w-main">
             <span class="w-big-icon" id="w-icon"></span>
@@ -326,7 +311,11 @@ header {
             <div class="w-row"><span>👁</span><span id="w-vis"></span></div>
           </div>
         </div>
-        <button class="windy-btn" id="windy-btn">🌬️ Windy 레이더 확인 →</button>
+        <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
+        <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
+        <div class="section-label">📹 인근 도로 CCTV 실시간</div>
+        <p style="font-size:11px;color:#9ca3af;margin:-4px 0 6px;">전국 도로 CCTV · 골프장 인근 선택 가능</p>
+        <iframe src="https://its.go.kr/map/cctv" style="width:100%;height:200px;border-radius:8px;border:none;"></iframe>
       </div>
 
       <div class="panel" id="p-food">
@@ -360,25 +349,11 @@ header {
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="stab('cctv')" id="st-cctv">📹 CCTV</button>
-    <button class="tab" onclick="stab('weather')" id="st-weather">⛅ 날씨</button>
+    <button class="tab on" onclick="stab('weather')" id="st-weather">🌤 날씨·현장</button>
     <button class="tab" onclick="stab('food')" id="st-food">🍽️ 맛집</button>
   </div>
 
-  <div class="panel on" id="sp-cctv">
-    <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">🌤 실시간 바람/날씨 레이더</div>
-    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:250px;border-radius:8px;border:none;"></iframe>
-    <button class="cctv-btn cctv-btn-secondary" style="margin-top:10px;" onclick="window.open('https://its.go.kr/map/cctv','_blank')">
-      <span class="cctv-btn-icon">🚦</span>
-      <span class="cctv-btn-text">
-        <span>ITS CCTV 확인</span>
-        <span class="cctv-btn-sub">전국 실시간 도로 영상</span>
-      </span>
-      <span style="margin-left:auto;">→</span>
-    </button>
-  </div>
-
-  <div class="panel" id="sp-weather">
+  <div class="panel on" id="sp-weather">
     <div class="w-card">
       <div class="w-main">
         <span class="w-big-icon" id="sw-icon"></span>
@@ -394,7 +369,11 @@ header {
         <div class="w-row"><span>👁</span><span id="sw-vis"></span></div>
       </div>
     </div>
-    <button class="windy-btn" id="s-windy-btn">🌬️ Windy 레이더 확인 →</button>
+    <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
+    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
+    <div class="section-label">📹 인근 도로 CCTV 실시간</div>
+    <p style="font-size:11px;color:#9ca3af;margin:-4px 0 6px;">전국 도로 CCTV · 골프장 인근 선택 가능</p>
+    <iframe src="https://its.go.kr/map/cctv" style="width:100%;height:200px;border-radius:8px;border:none;"></iframe>
   </div>
 
   <div class="panel" id="sp-food">
@@ -599,9 +578,7 @@ function fillDetail(c) {
   fillWeather('w', c);
   fillFood('food-list', c);
   fillCctv('windy-iframe', c);
-  tab('cctv');
-  document.getElementById('windy-btn').onclick = () =>
-    window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
+  tab('weather');
 }
 
 function fillSheet(c) {
@@ -613,9 +590,7 @@ function fillSheet(c) {
   fillWeather('sw', c);
   fillFood('s-food-list', c);
   fillCctv('s-windy-iframe', c);
-  stab('cctv');
-  document.getElementById('s-windy-btn').onclick = () =>
-    window.open(`https://www.windy.com/?${c.lat},${c.lng},11`, '_blank');
+  stab('weather');
 }
 
 function fillCctv(iframeId, c) {
@@ -753,7 +728,7 @@ function fillFood(listId, c) {
 }
 
 function tab(id) {
-  ['cctv','weather','food'].forEach(t => {
+  ['weather','food'].forEach(t => {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
@@ -766,7 +741,7 @@ function tab(id) {
   }
 }
 function stab(id) {
-  ['cctv','weather','food'].forEach(t => {
+  ['weather','food'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
