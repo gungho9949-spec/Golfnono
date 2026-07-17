@@ -183,11 +183,6 @@ video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
 </head>
 <body class="bg-rough text-slate1">
 
-<!-- 로딩 오버레이 -->
-<div id="loading-overlay">
-  <div class="spinner mb-4"></div>
-  <p class="text-flag font-sans text-sm">골프장 정보를 불러오는 중...</p>
-</div>
 
 <!-- 헤더 -->
 <header class="h-16 bg-rough border-b border-fairway flex items-center px-5 gap-3 flex-shrink-0" style="z-index:500;position:relative;">
@@ -391,10 +386,7 @@ video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; }
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// FALLBACK 데이터 (file:// 로컬 실행용)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const FALLBACK_COURSES = [
+const COURSES = [
   {
     id: 'nambu', name: '남부 컨트리클럽', region: '경기도 용인시',
     lat: 37.2403, lng: 127.1944, holes: 36, type: '퍼블릭', rating: 4.8,
@@ -485,19 +477,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors',
   maxZoom: 19,
 }).addTo(map);
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 로딩 스피너
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function showLoading() {
-  document.getElementById('loading-overlay').style.opacity = '1';
-  document.getElementById('loading-overlay').style.display = 'flex';
-}
-function hideLoading() {
-  const el = document.getElementById('loading-overlay');
-  el.style.opacity = '0';
-  setTimeout(() => { el.style.display = 'none'; }, 400);
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 마커 생성
@@ -753,27 +732,7 @@ function toggleSheet(open) {
   document.getElementById('bottom-sheet').classList.toggle('open', open);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 앱 초기화
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function init() {
-  showLoading();
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch('/api/courses', { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('API 오류');
-    const { courses } = await res.json();
-    renderMarkers(courses);
-  } catch (e) {
-    renderMarkers(FALLBACK_COURSES);
-  } finally {
-    hideLoading();
-  }
-}
-
-init();
+renderMarkers(COURSES);
 </script>
 </body>
 </html>
