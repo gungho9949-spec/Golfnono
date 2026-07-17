@@ -367,16 +367,52 @@ COURSES.forEach(c => {
   }).addTo(map).on('click', () => select(c, el));
 });
 
-function select(c, el) {
+const OWM_KEY = '9c92595dbd15ee90bf34815883c7da8c';
+
+const WIND_DIR = ['북','북북동','북동','동북동','동','동남동','남동','남남동','남','남남서','남서','서남서','서','서북서','북서','북북서'];
+function windDir(deg) { return WIND_DIR[Math.round(deg / 22.5) % 16]; }
+
+const OWM_ICON = {
+  '01d':'☀️','01n':'🌙','02d':'🌤','02n':'🌤','03d':'⛅','03n':'⛅',
+  '04d':'☁️','04n':'☁️','09d':'🌧','09n':'🌧','10d':'🌦','10n':'🌧',
+  '11d':'⛈','11n':'⛈','13d':'🌨','13n':'🌨','50d':'🌫','50n':'🌫',
+};
+
+async function fetchWeather(c) {
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${c.lat}&lon=${c.lng}&appid=${OWM_KEY}&lang=kr&units=metric`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    return {
+      icon: OWM_ICON[d.weather[0].icon] || '⛅',
+      temp: Math.round(d.main.temp),
+      desc: d.weather[0].description,
+      wind: `${windDir(d.wind.deg)} ${Math.round(d.wind.speed)}m/s`,
+      hum: d.main.humidity + '%',
+      uv: '–',
+      vis: Math.round((d.visibility || 10000) / 1000) + 'km',
+    };
+  } catch {
+    return c.weather;
+  }
+}
+
+async function select(c, el) {
   if (activeEl) activeEl.classList.remove('on');
   activeEl = el;
   el.classList.add('on');
   map.panTo([c.lat, c.lng]);
+  const weather = await fetchWeather(c);
+  const course = { ...c, weather };
   if (window.innerWidth < 768) {
-    fillSheet(c);
+    fillSheet(course);
     document.getElementById('sheet').classList.add('open');
   } else {
-    fillDetail(c);
+    fillDetail(course);
   }
 }
 
