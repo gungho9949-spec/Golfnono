@@ -73,7 +73,18 @@ header {
 #sidebar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 
 /* 지도 */
-#map { flex: 1; }
+.map-wrap { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+.locate-btn {
+  position: absolute; bottom: 24px; right: 16px; z-index: 100;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #fff; border: none; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; transition: box-shadow .2s, transform .15s;
+}
+.locate-btn:hover { box-shadow: 0 4px 16px rgba(34,197,94,.28); transform: scale(1.07); }
+.locate-btn:active { transform: scale(.95); }
 
 
 
@@ -317,7 +328,10 @@ header {
     </div>
   </div>
 
-  <div id="map"></div>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()" title="내 위치">📍</button>
+  </div>
 </div>
 
 <!-- 모바일 바텀시트 -->
@@ -442,7 +456,7 @@ const COURSES = [
 
 // 지도
 var container = document.getElementById('map');
-var options = { center: new kakao.maps.LatLng(36.2, 127.8), level: 8 };
+var options = { center: new kakao.maps.LatLng(36.2, 127.8), level: 13 };
 var map = new kakao.maps.Map(container, options);
 
 // 마커 이미지
@@ -601,11 +615,27 @@ function fillCctv(iframeId, c) {
   document.getElementById(iframeId).src = src;
 }
 
+let myLocationMarker = null;
+function locateMe() {
+  if (!navigator.geolocation) { alert('이 브라우저는 위치 정보를 지원하지 않습니다.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    const latlng = new kakao.maps.LatLng(lat, lng);
+    map.setCenter(latlng);
+    map.setLevel(10);
+    if (myLocationMarker) myLocationMarker.setMap(null);
+    const el = document.createElement('div');
+    el.style.cssText = 'width:16px;height:16px;background:#3b82f6;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 3px rgba(59,130,246,.35)';
+    myLocationMarker = new kakao.maps.CustomOverlay({ position: latlng, content: el, yAnchor: 0.5, xAnchor: 0.5 });
+    myLocationMarker.setMap(map);
+  }, () => { alert('위치 정보를 가져올 수 없습니다.'); });
+}
+
 function goHome() {
   if (activeMarker) { activeMarker.setImage(normalImg); activeMarker = null; }
   clearFoodOverlays();
   map.setCenter(new kakao.maps.LatLng(36.2, 127.8));
-  map.setLevel(8);
+  map.setLevel(13);
   document.getElementById('welcome').style.display = '';
   document.getElementById('detail').style.display = 'none';
   document.getElementById('sheet').classList.remove('open');
