@@ -707,6 +707,8 @@ function fillDetail(c) {
   renderGolfIndex('golf-index-card', c.weather);
   fillCctv('windy-iframe', c);
   loadCctv(c, 'cctv-video', 'cctv-select', 'cctv-overlay', 'cctv-overlay-msg', 'cctv-meta');
+  document.querySelectorAll('#p-weather .r-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('#p-weather .r-btn:nth-child(2)').classList.add('on');
   tab('weather');
 }
 
@@ -720,6 +722,8 @@ function fillSheet(c) {
   renderGolfIndex('s-golf-index-card', c.weather);
   fillCctv('s-windy-iframe', c);
   loadCctv(c, 's-cctv-video', 's-cctv-select', 's-cctv-overlay', 's-cctv-overlay-msg', 's-cctv-meta');
+  document.querySelectorAll('#sp-weather .r-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('#sp-weather .r-btn:nth-child(2)').classList.add('on');
   stab('weather');
 }
 
