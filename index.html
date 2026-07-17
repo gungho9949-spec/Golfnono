@@ -308,7 +308,8 @@ header {
   .w-main { margin-bottom: 8px !important; }
   .w-row { padding: 4px 0 !important; font-size: 12px !important; }
   .cctv-player-wrap video { height: 230px !important; }
-  #s-windy-iframe { height: 260px !important; }
+  #s-windy-iframe { height: 320px !important; }
+  #windy-iframe { height: 320px !important; }
   #windy-iframe { height: 260px; }
 }
 @media (min-width: 768px) { #sheet { display: none !important; } }
@@ -384,7 +385,7 @@ header {
           <button class="r-btn on" onclick="setRadarOverlay('rain','windy-iframe',this)">🌧️ 강수</button>
           <button class="r-btn" onclick="setRadarOverlay('temp','windy-iframe',this)">🌡️ 기온</button>
         </div>
-        <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:6px;"></iframe>
+        <iframe id="windy-iframe" frameborder="0" style="width:100%;min-height:320px;border-radius:8px;border:none;display:block;margin-bottom:6px;"></iframe>
         <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
         <div class="section-label">📹 인근 도로 CCTV 실시간</div>
         <select class="cctv-select" id="cctv-select"></select>
@@ -454,7 +455,7 @@ header {
       <button class="r-btn on" onclick="setRadarOverlay('rain','s-windy-iframe',this)">🌧️ 강수</button>
       <button class="r-btn" onclick="setRadarOverlay('temp','s-windy-iframe',this)">🌡️ 기온</button>
     </div>
-    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:6px;"></iframe>
+    <iframe id="s-windy-iframe" frameborder="0" style="width:100%;min-height:320px;border-radius:8px;border:none;display:block;margin-bottom:6px;"></iframe>
     <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
     <div class="section-label">📹 인근 도로 CCTV 실시간</div>
     <select class="cctv-select" id="s-cctv-select"></select>
@@ -711,7 +712,7 @@ function fillSheet(c) {
 }
 
 function windyUrl(lat, lng, overlay) {
-  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&detailLat=${lat}&detailLon=${lng}&zoom=10&level=surface&overlay=${overlay}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+  return `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lng}&detailLat=${lat}&detailLon=${lng}&zoom=9&level=surface&overlay=${overlay}&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
 }
 function fillCctv(iframeId, c) {
   const iframe = document.getElementById(iframeId);
