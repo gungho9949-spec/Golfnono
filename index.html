@@ -999,14 +999,15 @@ function goHome() {
 
 function fillWeather(p, c) {
   const w = c.weather;
-  document.getElementById(p+'-icon').textContent = w.icon;
-  document.getElementById(p+'-temp').textContent = w.temp + '°C';
-  document.getElementById(p+'-desc').textContent = w.desc;
-  document.getElementById(p+'-wind').textContent = w.wind;
-  document.getElementById(p+'-hum').textContent = w.hum;
-  document.getElementById(p+'-rain').textContent = w.rain || '–';
-  document.getElementById(p+'-uv').textContent = w.uv;
-  document.getElementById(p+'-vis').textContent = '시야 ' + w.vis;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set(p+'-icon', w.icon);
+  set(p+'-temp', w.temp + '°C');
+  set(p+'-desc', w.desc);
+  set(p+'-wind', w.wind);
+  set(p+'-hum', w.hum);
+  set(p+'-rain', w.rain || '–');
+  set(p+'-uv', w.uv);
+  set(p+'-vis', '시야 ' + w.vis);
 }
 
 const KAKAO_REST_KEY = '85715def05ece125da02d43e2e6fa85e';
