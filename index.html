@@ -757,16 +757,26 @@ function tab(id) {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
-  if (id === 'food' && activeCourse) { clearFoodOverlays(); addFoodMarkers(activeCourse); }
-  else clearFoodOverlays();
+  if (id === 'food' && activeCourse) {
+    clearFoodOverlays();
+    addFoodMarkers(activeCourse);
+    fillFood('food-list', activeCourse);
+  } else {
+    clearFoodOverlays();
+  }
 }
 function stab(id) {
   ['cctv','weather','food'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
-  if (id === 'food' && activeCourse) { clearFoodOverlays(); addFoodMarkers(activeCourse); }
-  else clearFoodOverlays();
+  if (id === 'food' && activeCourse) {
+    clearFoodOverlays();
+    addFoodMarkers(activeCourse);
+    fillFood('s-food-list', activeCourse);
+  } else {
+    clearFoodOverlays();
+  }
 }
 function closeSheet() {
   document.getElementById('sheet').classList.remove('open');
