@@ -7,6 +7,7 @@
 <title>Golfnono 골프노노</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Noto Sans KR', sans-serif; background: #f4f6f8; color: #1a1a1a; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -156,6 +157,32 @@ header {
   margin: 14px 0 8px; padding-bottom: 6px;
   border-bottom: 1px solid #f3f4f6;
 }
+.cctv-select {
+  width: 100%; padding: 8px 12px; border: 1.5px solid #e5e7eb;
+  border-radius: 8px; font-size: 13px; font-family: inherit;
+  background: #fff; color: #1a1a1a; margin-bottom: 10px; cursor: pointer;
+  appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.cctv-select:focus { outline: none; border-color: #22c55e; }
+.cctv-player-wrap {
+  position: relative; width: 100%; background: #111;
+  border-radius: 8px; overflow: hidden; margin-bottom: 6px;
+}
+.cctv-player-wrap video { width: 100%; height: 175px; display: block; object-fit: cover; }
+.cctv-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.65);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; gap: 10px; transition: opacity .3s;
+}
+.cctv-overlay.hidden { display: none; }
+.cctv-spinner {
+  width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.25);
+  border-top-color: #22c55e; border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.cctv-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
 
 /* 맛집 */
 .food-card {
@@ -322,8 +349,15 @@ header {
         <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
         <iframe id="windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
         <div class="section-label">📹 인근 도로 CCTV 실시간</div>
-        <p style="font-size:11px;color:#9ca3af;margin:-4px 0 6px;">전국 도로 CCTV · 골프장 인근 선택 가능</p>
-        <iframe src="https://its.go.kr/map/cctv" style="width:100%;height:200px;border-radius:8px;border:none;"></iframe>
+        <select class="cctv-select" id="cctv-select"></select>
+        <div class="cctv-player-wrap">
+          <video id="cctv-video" muted playsinline></video>
+          <div class="cctv-overlay" id="cctv-overlay">
+            <div class="cctv-spinner"></div>
+            <span id="cctv-overlay-msg">CCTV 불러오는 중...</span>
+          </div>
+        </div>
+        <div class="cctv-meta" id="cctv-meta"></div>
       </div>
 
       <div class="panel" id="p-food">
@@ -380,8 +414,15 @@ header {
     <div class="section-label">🌤 실시간 바람/날씨 레이더</div>
     <iframe id="s-windy-iframe" frameborder="0" style="width:100%;height:220px;border-radius:8px;border:none;margin-bottom:14px;"></iframe>
     <div class="section-label">📹 인근 도로 CCTV 실시간</div>
-    <p style="font-size:11px;color:#9ca3af;margin:-4px 0 6px;">전국 도로 CCTV · 골프장 인근 선택 가능</p>
-    <iframe src="https://its.go.kr/map/cctv" style="width:100%;height:200px;border-radius:8px;border:none;"></iframe>
+    <select class="cctv-select" id="s-cctv-select"></select>
+    <div class="cctv-player-wrap">
+      <video id="s-cctv-video" muted playsinline></video>
+      <div class="cctv-overlay" id="s-cctv-overlay">
+        <div class="cctv-spinner"></div>
+        <span id="s-cctv-overlay-msg">CCTV 불러오는 중...</span>
+      </div>
+    </div>
+    <div class="cctv-meta" id="s-cctv-meta"></div>
   </div>
 
   <div class="panel" id="sp-food">
@@ -603,6 +644,7 @@ function fillDetail(c) {
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('w', c);
   fillCctv('windy-iframe', c);
+  loadCctv(c, 'cctv-video', 'cctv-select', 'cctv-overlay', 'cctv-overlay-msg', 'cctv-meta');
   tab('weather');
 }
 
@@ -614,12 +656,116 @@ function fillSheet(c) {
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
   fillWeather('sw', c);
   fillCctv('s-windy-iframe', c);
+  loadCctv(c, 's-cctv-video', 's-cctv-select', 's-cctv-overlay', 's-cctv-overlay-msg', 's-cctv-meta');
   stab('weather');
 }
 
 function fillCctv(iframeId, c) {
   const src = `https://embed.windy.com/embed2.html?lat=${c.lat}&lon=${c.lng}&zoom=11&level=surface&overlay=wind&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
   document.getElementById(iframeId).src = src;
+}
+
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+const hlsInstances = {};
+function destroyHls(videoId) {
+  if (hlsInstances[videoId]) { hlsInstances[videoId].destroy(); delete hlsInstances[videoId]; }
+}
+
+function playCctv(url, name, distKm, videoId, overlayId, msgId, metaId) {
+  const video = document.getElementById(videoId);
+  const overlay = document.getElementById(overlayId);
+  const msg = document.getElementById(msgId);
+  const meta = document.getElementById(metaId);
+  if (!video || !url) {
+    if (msg) msg.textContent = '스트림 주소 없음';
+    return;
+  }
+  destroyHls(videoId);
+  if (overlay) overlay.classList.remove('hidden');
+  if (msg) msg.textContent = 'CCTV 연결 중...';
+  if (meta) meta.textContent = `📍 ${name}  ·  ${distKm.toFixed(1)}km`;
+
+  const onReady = () => { if (overlay) overlay.classList.add('hidden'); video.play().catch(() => {}); };
+  const onErr = () => { if (msg) msg.textContent = '스트림 연결 실패'; };
+
+  if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: false, lowLatencyMode: true });
+    hlsInstances[videoId] = hls;
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) onErr(); });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.addEventListener('loadedmetadata', onReady, { once: true });
+    video.addEventListener('error', onErr, { once: true });
+  } else {
+    if (msg) msg.textContent = 'HLS 미지원 브라우저';
+  }
+}
+
+let cctvCache = null;
+async function fetchCctvList() {
+  if (cctvCache) return cctvCache;
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 7000);
+    const res = await fetch('/api/cctv', { signal: ctrl.signal });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.list || data.data || data.result || data.cctvs || []);
+    cctvCache = list;
+    return list;
+  } catch { return []; }
+}
+
+async function loadCctv(course, videoId, selectId, overlayId, msgId, metaId) {
+  const sel = document.getElementById(selectId);
+  const msgEl = document.getElementById(msgId);
+  if (sel) sel.innerHTML = '<option>CCTV 목록 불러오는 중...</option>';
+  if (msgEl) msgEl.textContent = 'CCTV 불러오는 중...';
+
+  const list = await fetchCctvList();
+  if (!list.length) {
+    if (sel) sel.innerHTML = '<option>CCTV 정보를 가져올 수 없습니다</option>';
+    if (msgEl) msgEl.textContent = '데이터 없음';
+    return;
+  }
+
+  const nearby = list.map(c => {
+    const lat = parseFloat(c.lat || c.latitude || c.mapy || c.y || 0);
+    const lng = parseFloat(c.lng || c.longitude || c.mapx || c.x || 0);
+    if (!lat || !lng) return null;
+    const url = c.filepath || c.streamurl || c.hls_url || c.url || '';
+    if (!url) return null;
+    return { name: c.cctvname || c.cctv_nm || c.name || 'CCTV', url, lat, lng,
+      dist: getDistance(course.lat, course.lng, lat, lng) };
+  }).filter(Boolean).sort((a, b) => a.dist - b.dist).slice(0, 3);
+
+  if (!nearby.length) {
+    if (sel) sel.innerHTML = '<option>인근 CCTV 없음</option>';
+    if (msgEl) msgEl.textContent = '인근 CCTV 없음';
+    return;
+  }
+
+  if (sel) {
+    sel.innerHTML = nearby.map((c, i) =>
+      `<option value="${i}">${c.name} (${c.dist.toFixed(1)}km)</option>`
+    ).join('');
+    sel.onchange = () => {
+      const c = nearby[parseInt(sel.value)];
+      if (c) playCctv(c.url, c.name, c.dist, videoId, overlayId, msgId, metaId);
+    };
+  }
+  playCctv(nearby[0].url, nearby[0].name, nearby[0].dist, videoId, overlayId, msgId, metaId);
 }
 
 let myLocationMarker = null;
