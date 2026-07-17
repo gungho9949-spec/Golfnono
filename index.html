@@ -549,7 +549,7 @@ function addFoodMarkers(course, restaurants) {
     const pos = (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : getRestaurantPos(course, r);
     foodPositions[r.rank] = pos;
     const el = document.createElement('div');
-    el.innerHTML = `<div style="width:28px;height:28px;background:#22c55e;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">${r.rank}</div>`;
+    el.innerHTML = `<div style="width:28px;height:28px;background:#fff;border-radius:50%;border:2.5px solid #22c55e;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#22c55e;cursor:pointer;">${r.rank}</div>`;
     el.onclick = () => { highlightFoodCard(r.rank); tab('food'); };
     const overlay = new kakao.maps.CustomOverlay({
       position: new kakao.maps.LatLng(pos.lat, pos.lng),
@@ -579,6 +579,7 @@ async function select(c, marker) {
   activeMarker = marker;
   marker.setImage(activeImg);
   map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+  map.setLevel(7);
   clearFoodOverlays();
   const weather = await fetchWeather(c);
   const course = { ...c, weather };
@@ -678,7 +679,7 @@ function goHome() {
           activeMarker = marker;
           marker.setImage(activeImg);
           map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
-          map.setLevel(9);
+          map.setLevel(7);
           clearFoodOverlays();
           activeCourse = c;
           fetchWeather(c).then(weather => {
