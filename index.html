@@ -115,28 +115,37 @@ header {
 
 /* 맛집 */
 .food-card {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 12px; padding: 14px; margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  background: #fff; border: 1.5px solid #e5e7eb;
+  border-radius: 14px; padding: 14px; margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05); cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
 }
-.food-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.food-card:hover { border-color: #22c55e; box-shadow: 0 2px 10px rgba(34,197,94,.12); }
+.food-card.hl { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+.food-top { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .rank {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+  background: #22c55e; color: #fff;
 }
-.rank-1 { background: #fef3c7; color: #92400e; }
-.rank-2 { background: #f3f4f6; color: #374151; }
-.rank-3 { background: #fdf2f8; color: #7c3aed; }
+.food-info { flex: 1; min-width: 0; }
 .food-name { font-size: 14px; font-weight: 700; color: #1a1a1a; }
 .food-meta { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-.food-price { margin-left: auto; font-size: 12px; font-weight: 700; color: #22c55e; flex-shrink: 0; }
-.badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.food-price { font-size: 13px; font-weight: 700; color: #22c55e; flex-shrink: 0; }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
 .badge {
   background: #f0fdf4; color: #16a34a;
   border: 1px solid #bbf7d0; border-radius: 99px;
   padding: 2px 8px; font-size: 10px; font-weight: 600;
 }
+.kakao-dir-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 9px; background: #fee500; color: #391b1b;
+  font-weight: 700; font-size: 12px; border: none; border-radius: 8px;
+  cursor: pointer; transition: opacity .2s;
+}
+.kakao-dir-btn:hover { opacity: .85; }
 .food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 
 /* CCTV 버튼 */
@@ -468,11 +477,60 @@ async function fetchWeather(c) {
   }
 }
 
+let foodOverlays = [];
+let foodPositions = {};
+const FOOD_ANGLES = [50, 160, 280];
+
+function getRestaurantPos(course, r) {
+  const km = parseFloat(r.dist) || 1;
+  const angle = FOOD_ANGLES[r.rank - 1] * Math.PI / 180;
+  return {
+    lat: course.lat + (km * 0.009) * Math.cos(angle),
+    lng: course.lng + (km * 0.011) * Math.sin(angle)
+  };
+}
+function clearFoodOverlays() {
+  foodOverlays.forEach(o => o.setMap(null));
+  foodOverlays = []; foodPositions = {};
+}
+function addFoodMarkers(course) {
+  foodPositions = {};
+  course.restaurants.forEach(r => {
+    const pos = getRestaurantPos(course, r);
+    foodPositions[r.rank] = pos;
+    const el = document.createElement('div');
+    el.innerHTML = `<div style="width:28px;height:28px;background:#22c55e;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">${r.rank}</div>`;
+    el.onclick = () => { highlightFoodCard(r.rank); tab('food'); };
+    const overlay = new kakao.maps.CustomOverlay({
+      position: new kakao.maps.LatLng(pos.lat, pos.lng),
+      content: el, yAnchor: 0.5, xAnchor: 0.5
+    });
+    overlay.setMap(map);
+    foodOverlays.push(overlay);
+  });
+}
+function highlightFoodCard(rank) {
+  ['food-list','s-food-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelectorAll('.food-card').forEach(c => c.classList.remove('hl'));
+    const target = el.querySelector(`[data-rank="${rank}"]`);
+    if (target) { target.classList.add('hl'); target.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+  });
+}
+function cardClick(rank) {
+  highlightFoodCard(rank);
+  const pos = foodPositions[rank];
+  if (pos) map.setCenter(new kakao.maps.LatLng(pos.lat, pos.lng));
+}
+
 async function select(c, marker) {
   if (activeMarker) activeMarker.setImage(normalImg);
   activeMarker = marker;
   marker.setImage(activeImg);
   map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+  clearFoodOverlays();
+  addFoodMarkers(c);
   const weather = await fetchWeather(c);
   const course = { ...c, weather };
   if (window.innerWidth < 768) {
@@ -536,18 +594,22 @@ function fillWeather(p, c) {
 
 function fillFood(listId, c) {
   document.getElementById(listId).innerHTML = c.restaurants.map(r => {
-    const url = `https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region)}`;
+    const pos = foodPositions[r.rank] || {};
+    const kakaoDirUrl = pos.lat
+      ? `https://map.kakao.com/link/to/${encodeURIComponent(r.name)},${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`
+      : `https://map.kakao.com/?q=${encodeURIComponent(r.name + ' ' + c.region)}`;
     return `
-    <div class="food-card" onclick="window.open('${url}','_blank')" style="cursor:pointer;">
+    <div class="food-card" data-rank="${r.rank}" onclick="cardClick(${r.rank})">
       <div class="food-top">
-        <div class="rank rank-${r.rank}">${r.rank}</div>
-        <div>
+        <div class="rank">${r.rank}</div>
+        <div class="food-info">
           <div class="food-name">${r.emoji} ${r.name}</div>
           <div class="food-meta">${r.cat} · ${r.dist}</div>
         </div>
         <div class="food-price">${r.price}</div>
       </div>
       <div class="badges">${r.badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
+      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
     </div>`;
   }).join('');
 }
