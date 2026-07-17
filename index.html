@@ -1,3 +1,4 @@
+<!-- 카카오맵 도메인: https://golfnono-kr.vercel.app -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -421,26 +422,52 @@ const COURSES = [
   },
 ];
 
-// 지도
-const map = L.map('map', { center: [36.2, 127.8], zoom: 7 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap contributors © CARTO',
-  subdomains: 'abcd',
-  maxZoom: 19
-}).addTo(map);
+// 지도 (카카오맵 우선, 실패 시 Leaflet 폴백)
+let mapInst, useKakao = false, activeEl = null, activeMarker = null;
+let normalImg, activeImg;
 
-// 마커
-let activeEl = null;
-document.getElementById('cnt').textContent = COURSES.length + '개';
+function initMap(kakaoOk) {
+  useKakao = kakaoOk;
+  document.getElementById('cnt').textContent = COURSES.length + '개';
 
-COURSES.forEach(c => {
-  const el = document.createElement('div');
-  el.className = 'gmarker';
-  el.title = c.name;
-  L.marker([c.lat, c.lng], {
-    icon: L.divIcon({ className: '', html: el, iconSize: [14, 14], iconAnchor: [7, 7] })
-  }).addTo(map).on('click', () => select(c, el));
-});
+  if (useKakao) {
+    mapInst = new kakao.maps.Map(document.getElementById('map'), {
+      center: new kakao.maps.LatLng(36.2, 127.8),
+      level: 7
+    });
+    const mkSvg = (fill, size) =>
+      'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2-2}" fill="${fill}" stroke="#fff" stroke-width="2"/></svg>`
+      );
+    normalImg = new kakao.maps.MarkerImage(mkSvg('#22c55e',16), new kakao.maps.Size(16,16), { offset: new kakao.maps.Point(8,8) });
+    activeImg  = new kakao.maps.MarkerImage(mkSvg('#16a34a',22), new kakao.maps.Size(22,22), { offset: new kakao.maps.Point(11,11) });
+    COURSES.forEach(c => {
+      const marker = new kakao.maps.Marker({ position: new kakao.maps.LatLng(c.lat, c.lng), map: mapInst, image: normalImg, title: c.name });
+      kakao.maps.event.addListener(marker, 'click', () => select(c, marker));
+    });
+  } else {
+    mapInst = L.map('map', { center: [36.2, 127.8], zoom: 7 });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap contributors © CARTO', subdomains: 'abcd', maxZoom: 19
+    }).addTo(mapInst);
+    COURSES.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'gmarker'; el.title = c.name;
+      L.marker([c.lat, c.lng], {
+        icon: L.divIcon({ className: '', html: el, iconSize: [14,14], iconAnchor: [7,7] })
+      }).addTo(mapInst).on('click', () => select(c, el));
+    });
+  }
+}
+
+// 카카오 SDK 동적 로드 → 실패 시 Leaflet 폴백
+(function() {
+  const s = document.createElement('script');
+  s.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e&autoload=false';
+  s.onload = () => { try { kakao.maps.load(() => initMap(true)); } catch(e) { initMap(false); } };
+  s.onerror = () => initMap(false);
+  document.head.appendChild(s);
+})();
 
 const OWM_KEY = '9c92595dbd15ee90bf34815883c7da8c';
 
@@ -476,11 +503,18 @@ async function fetchWeather(c) {
   }
 }
 
-async function select(c, el) {
-  if (activeEl) activeEl.classList.remove('on');
-  activeEl = el;
-  el.classList.add('on');
-  map.panTo([c.lat, c.lng]);
+async function select(c, markerOrEl) {
+  if (useKakao) {
+    if (activeMarker) activeMarker.setImage(normalImg);
+    activeMarker = markerOrEl;
+    markerOrEl.setImage(activeImg);
+    mapInst.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+  } else {
+    if (activeEl) activeEl.classList.remove('on');
+    activeEl = markerOrEl;
+    markerOrEl.classList.add('on');
+    mapInst.panTo([c.lat, c.lng]);
+  }
   const weather = await fetchWeather(c);
   const course = { ...c, weather };
   if (window.innerWidth < 768) {
