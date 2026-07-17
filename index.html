@@ -720,8 +720,8 @@ function fillFood(listId, c) {
       </div>
       <div class="badges">${r.badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
       <div class="food-btns">
-        <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵 길찾기</button>
-        <button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region)}','_blank')">🔍 네이버 식당정보</button>
+        <button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region + ' 맛집')}','_blank')">🔍 네이버에서 식당 정보 보기</button>
+        <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
       </div>
     </div>`;
   }).join('');
