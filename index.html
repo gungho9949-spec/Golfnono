@@ -759,15 +759,18 @@ function toggleSheet(open) {
 async function init() {
   showLoading();
   try {
-    const res = await fetch('/api/courses');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch('/api/courses', { signal: controller.signal });
+    clearTimeout(timer);
     if (!res.ok) throw new Error('API 오류');
     const { courses } = await res.json();
     renderMarkers(courses);
   } catch (e) {
-    // file:// 로컬 또는 API 실패 시 폴백
     renderMarkers(FALLBACK_COURSES);
+  } finally {
+    hideLoading();
   }
-  hideLoading();
 }
 
 init();
