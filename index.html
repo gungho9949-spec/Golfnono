@@ -422,8 +422,8 @@ const COURSES = [
 
 // 지도
 const map = L.map('map', { center: [36.8, 127.6], zoom: 7 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap contributors © CARTO',
+L.tileLayer('https://xdworld.vworld.kr/2d/Base/service/{z}/{x}/{y}.png', {
+  attribution: '© Vworld',
   maxZoom: 19
 }).addTo(map);
 
