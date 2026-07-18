@@ -742,6 +742,14 @@ async function fillDetail(c) {
   }
   fillWeather('w', { weather });
   renderGolfIndex('golf-index-card', weather);
+  const windyIframe = document.getElementById('windy-iframe');
+  if (windyIframe && activeCourse) {
+    windyIframe.src = '';
+    setTimeout(() => { windyIframe.src = windyUrl(activeCourse.lat, activeCourse.lng, 'rain'); }, 300);
+    document.querySelectorAll('#p-weather .r-btn').forEach(b => b.classList.remove('on'));
+    const rainBtn = document.querySelector('#p-weather .r-btn:nth-child(2)');
+    if (rainBtn) rainBtn.classList.add('on');
+  }
 }
 
 async function fillSheet(c) {
@@ -765,6 +773,14 @@ async function fillSheet(c) {
   }
   fillWeather('sw', { weather });
   renderGolfIndex('s-golf-index-card', weather);
+  const sWindyIframe = document.getElementById('s-windy-iframe');
+  if (sWindyIframe && activeCourse) {
+    sWindyIframe.src = '';
+    setTimeout(() => { sWindyIframe.src = windyUrl(activeCourse.lat, activeCourse.lng, 'rain'); }, 300);
+    document.querySelectorAll('#sp-weather .r-btn').forEach(b => b.classList.remove('on'));
+    const sRainBtn = document.querySelector('#sp-weather .r-btn:nth-child(2)');
+    if (sRainBtn) sRainBtn.classList.add('on');
+  }
 }
 
 function windyUrl(lat, lng, overlay) {
