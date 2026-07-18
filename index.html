@@ -78,7 +78,7 @@ header {
 .map-wrap { flex: 1; position: relative; }
 #map { width: 100%; height: 100%; }
 .locate-btn {
-  position: fixed; bottom: 90px; right: 16px; z-index: 500;
+  position: fixed; bottom: 90px; right: 16px; z-index: 1100;
   width: 44px; height: 44px; border-radius: 50%;
   background: #fff; border: none; cursor: pointer;
   box-shadow: 0 2px 10px rgba(0,0,0,.18);
@@ -286,8 +286,8 @@ header {
 
 /* 모바일 */
 @media (max-width: 767px) {
-  .locate-btn { position: fixed !important; bottom: 90px !important; right: 16px !important; z-index: 500 !important; }
-  #home-fab { bottom: 20px !important; right: 16px !important; z-index: 300 !important; }
+  .locate-btn { position: fixed !important; bottom: 90px !important; right: 16px !important; z-index: 1100 !important; }
+  #home-fab { bottom: 24px !important; left: 16px !important; right: auto !important; z-index: 300 !important; }
   #sidebar { display: none; }
   #map { width: 100%; }
   #sheet {
