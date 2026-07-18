@@ -408,7 +408,7 @@ header {
 
   <div class="map-wrap">
     <div id="map"></div>
-    <button id="home-fab" onclick="closeSheet();goHome();" style="display:none;position:fixed;bottom:80px;right:16px;z-index:9999;width:52px;height:52px;border-radius:50%;background:#1a7f3c;border:none;box-shadow:0 4px 12px rgba(0,0,0,0.25);cursor:pointer;align-items:center;justify-content:center;">
+    <button id="home-fab" onclick="closeSheet();goHome();" style="display:none;position:fixed;bottom:24px;right:16px;z-index:9999;width:60px;height:60px;border-radius:50%;background:#16a34a;border:none;box-shadow:0 6px 20px rgba(0,0,0,0.35);cursor:pointer;align-items:center;justify-content:center;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
     </button>
     <button class="locate-btn" onclick="locateMe()" title="내 위치">📍</button>
@@ -652,25 +652,27 @@ function showRadiusCircle(course) {
   if (foodRadiusCircle) { foodRadiusCircle.setMap(null); foodRadiusCircle = null; }
   foodRadiusCircle = new kakao.maps.Circle({
     center: new kakao.maps.LatLng(course.lat, course.lng),
-    radius: 5000,
+    radius: 3000,
     strokeWeight: 1.5,
-    strokeColor: '#22c55e',
-    strokeOpacity: 0.5,
+    strokeColor: '#16a34a',
+    strokeOpacity: 0.6,
     strokeStyle: 'dashed',
-    fillColor: '#22c55e',
-    fillOpacity: 0.04,
+    fillColor: '#dcfce7',
+    fillOpacity: 0.2,
   });
   foodRadiusCircle.setMap(map);
 }
+const CIRCLE_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
 function addFoodMarkers(course, restaurants) {
   foodPositions = {};
-  const items = restaurants || course.restaurants;
-  items.forEach(r => {
-    const pos = (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : getRestaurantPos(course, r);
+  const items = restaurants || [];
+  items.forEach((r, i) => {
+    const pos = (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : null;
+    if (!pos) return;
     foodPositions[r.rank] = pos;
     const el = document.createElement('div');
-    el.innerHTML = `<div style="width:28px;height:28px;background:#fff;border-radius:50%;border:2.5px solid #22c55e;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#22c55e;cursor:pointer;">${r.rank}</div>`;
-    el.onclick = () => { highlightFoodCard(r.rank); tab('food'); };
+    el.innerHTML = `<div style="width:30px;height:30px;background:#16a34a;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700;cursor:pointer;">${CIRCLE_NUMS[i] || (i+1)}</div>`;
+    el.onclick = () => highlightFoodCard(r.rank);
     const overlay = new kakao.maps.CustomOverlay({
       position: new kakao.maps.LatLng(pos.lat, pos.lng),
       content: el, yAnchor: 0.5, xAnchor: 0.5
@@ -1126,23 +1128,21 @@ function renderFoodCardFromApi(p, idx) {
   const dist = p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm';
   const lat = parseFloat(p.y), lng = parseFloat(p.x);
   const dirUrl = `https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${lat.toFixed(6)},${lng.toFixed(6)}`;
-  const placeBtn = p.place_url
-    ? `<button class="kakao-place-btn" onclick="event.stopPropagation();window.open('${p.place_url}','_blank')">📍 카카오플레이스</button>`
+  const phoneHtml = p.phone ? `<div style="font-size:12px;color:#6b7280;">${p.phone}</div>` : '';
+  const placeLink = p.place_url
+    ? `<a href="${p.place_url}" target="_blank" style="font-size:12px;padding:4px 10px;border-radius:12px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
     : '';
-  const phoneHtml = p.phone ? `<div class="food-meta" style="margin-top:2px;">📞 ${p.phone}</div>` : '';
   return `
-  <div class="food-card">
-    <div class="food-top">
-      <div class="rank">${idx + 1}</div>
-      <div class="food-info">
-        <div class="food-name">🍽️ ${p.place_name}</div>
-        <div class="food-meta">${cat} · ${dist}</div>
-        ${phoneHtml}
+  <div style="display:flex;gap:12px;padding:12px;border-bottom:1px solid #f0f0f0;align-items:flex-start;">
+    <div style="min-width:28px;height:28px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${idx + 1}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:14px;">${p.place_name}</div>
+      <div style="font-size:12px;color:#6b7280;">${cat} · ${dist}</div>
+      ${phoneHtml}
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        ${placeLink}
+        <a href="${dirUrl}" target="_blank" style="font-size:12px;padding:4px 10px;border-radius:12px;background:#fee2e2;color:#dc2626;text-decoration:none;">길찾기</a>
       </div>
-    </div>
-    <div class="food-btns">
-      ${placeBtn}
-      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${dirUrl}','_blank')">🗺️ 카카오맵 길찾기</button>
     </div>
   </div>`;
 }
@@ -1176,6 +1176,8 @@ function tab(id) {
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
+    map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
+    map.setLevel(6);
     loadFood('food-list', activeCourse);
   } else {
     clearFoodOverlays();
@@ -1187,6 +1189,8 @@ function stab(id) {
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
+    map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
+    map.setLevel(6);
     loadFood('s-food-list', activeCourse);
   } else {
     clearFoodOverlays();
