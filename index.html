@@ -1110,7 +1110,7 @@ function fillWeather(p, c) {
 }
 
 async function fetchRestaurants(lat, lng) {
-  const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=3000&sort=popularity&size=10`;
+  const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=3000&sort=distance&size=15`;
   try {
     const res = await fetch(url, {
       headers: { Authorization: 'KakaoAK 85715def05ece125da02d43e2e6fa85e' }
