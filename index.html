@@ -326,6 +326,7 @@ header {
       <div class="logo-sub">실시간 날씨 · 맛집</div>
     </div>
   </div>
+  <button id="nearby-btn" onclick="showNearby()" style="flex-shrink:0;padding:6px 12px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;font-size:12px;font-weight:600;color:#16a34a;cursor:pointer;white-space:nowrap;">📍 내 주변</button>
   <div class="search-wrap" id="search-wrap">
     <div class="search-input-row">
       <span class="search-icon">🔍</span>
@@ -348,6 +349,45 @@ header {
         <span class="chip">🍽️ 맛집 Top3</span>
         <span class="chip">🌬️ Windy</span>
       </div>
+      <!-- 즐겨찾기 ���션 -->
+      <div id="fav-section" style="width:100%;margin-top:18px;display:none;">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:10px;text-align:left;">♥ 즐겨찾기</div>
+        <div id="fav-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <!-- 오늘의 TOP5 -->
+      <div style="width:100%;margin-top:18px;">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:10px;text-align:left;">🏆 오늘의 라운딩 추천 TOP 5</div>
+        <div id="top5-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <!-- 필터 -->
+      <div style="width:100%;margin-top:18px;">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:8px;text-align:left;">🔽 필터</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <select id="filter-region" onchange="applyFilters()" style="padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-family:inherit;">
+            <option value="">지역 전체</option>
+            <option value="서울">서울/경기</option>
+            <option value="강원">강원</option>
+            <option value="충">충청</option>
+            <option value="전">전라</option>
+            <option value="경">경상</option>
+            <option value="제주">제주</option>
+          </select>
+          <select id="filter-holes" onchange="applyFilters()" style="padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-family:inherit;">
+            <option value="">홀수 전체</option>
+            <option value="9">9홀</option>
+            <option value="18">18홀</option>
+            <option value="27">27홀</option>
+            <option value="36">36홀 이상</option>
+          </select>
+          <select id="filter-type" onchange="applyFilters()" style="padding:7px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-family:inherit;">
+            <option value="">종류 전체</option>
+            <option value="대중">대중제</option>
+            <option value="회원">회원제</option>
+            <option value="비회원">비회원제</option>
+          </select>
+          <button onclick="resetFilters()" style="padding:7px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;background:#f9fafb;cursor:pointer;">전체 초기화</button>
+        </div>
+      </div>
     </div>
 
     <div id="detail">
@@ -359,15 +399,19 @@ header {
             <div class="d-region" id="d-region"></div>
             <div class="d-rating" id="d-rating"></div>
           </div>
-          <div class="d-temp" id="d-temp"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
+            <div class="d-temp" id="d-temp"></div>
+          </div>
         </div>
         <div class="d-tags" id="d-tags"></div>
       </div>
 
       <div class="tabs">
-        <button class="tab on" onclick="tab('weather')" id="t-weather">🌤 날씨·현장</button>
+        <button class="tab on" onclick="tab('weather')" id="t-weather">🌤 날씨</button>
         <button class="tab" onclick="tab('food')" id="t-food">🍽️ 맛집</button>
-        <button class="tab" onclick="tab('photo')" id="t-photo">📷 사진·리뷰</button>
+        <button class="tab" onclick="tab('photo')" id="t-photo">📷 리뷰</button>
+        <button class="tab" onclick="tab('info')" id="t-info">ℹ️ 정보</button>
       </div>
 
       <div class="panel on" id="p-weather">
@@ -410,6 +454,9 @@ header {
       <div class="panel" id="p-photo">
         <div id="photo-list"></div>
       </div>
+      <div class="panel" id="p-info">
+        <div id="info-list"></div>
+      </div>
     </div>
   </div>
 
@@ -430,15 +477,19 @@ header {
         <div class="d-name" id="s-name"></div>
         <div class="d-region" id="s-region"></div>
       </div>
-      <div class="d-temp" id="s-temp"></div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="s-fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
+        <div class="d-temp" id="s-temp"></div>
+      </div>
     </div>
     <div class="d-tags" id="s-tags"></div>
   </div>
 
   <div class="tabs">
-    <button class="tab on" onclick="stab('weather')" id="st-weather">🌤 날씨·현장</button>
+    <button class="tab on" onclick="stab('weather')" id="st-weather">🌤 날씨</button>
     <button class="tab" onclick="stab('food')" id="st-food">🍽️ 맛집</button>
-    <button class="tab" onclick="stab('photo')" id="st-photo">📷 사진·리뷰</button>
+    <button class="tab" onclick="stab('photo')" id="st-photo">📷 리뷰</button>
+    <button class="tab" onclick="stab('info')" id="st-info">ℹ️ 정보</button>
   </div>
 
   <div class="panel on" id="sp-weather">
@@ -480,6 +531,38 @@ header {
 
   <div class="panel" id="sp-photo">
     <div id="s-photo-list"></div>
+  </div>
+  <div class="panel" id="sp-info">
+    <div id="s-info-list"></div>
+  </div>
+</div>
+
+<!-- 모바일 필터 칩 (지도 위) -->
+<div id="mobile-filter" style="display:none;position:fixed;bottom:160px;left:0;right:0;z-index:900;padding:0 12px;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;">
+  <div style="display:inline-flex;gap:8px;padding:4px 0;">
+    <select id="m-filter-region" onchange="applyFilters()" style="padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:12px;background:#fff;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+      <option value="">지역 전체</option>
+      <option value="서울">서울/경기</option>
+      <option value="강원">강원</option>
+      <option value="충">충청</option>
+      <option value="전">전라</option>
+      <option value="경">경상</option>
+      <option value="제주">제주</option>
+    </select>
+    <select id="m-filter-holes" onchange="applyFilters()" style="padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:12px;background:#fff;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+      <option value="">홀수 전체</option>
+      <option value="9">9홀</option>
+      <option value="18">18홀</option>
+      <option value="27">27홀</option>
+      <option value="36">36홀↑</option>
+    </select>
+    <select id="m-filter-type" onchange="applyFilters()" style="padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:12px;background:#fff;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+      <option value="">종류 전체</option>
+      <option value="대중">대중제</option>
+      <option value="회원">회원제</option>
+      <option value="비회원">비회원제</option>
+    </select>
+    <button onclick="resetFilters()" style="padding:6px 14px;border:1.5px solid #e5e7eb;border-radius:20px;font-size:12px;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);">초기화</button>
   </div>
 </div>
 
@@ -747,6 +830,7 @@ async function select(c, marker) {
 }
 
 async function fillDetail(c) {
+  updateFavBtn(getFavorites().includes(c.name));
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('detail').style.display = 'flex';
   document.getElementById('d-icon').textContent = c.weather.icon;
@@ -781,6 +865,7 @@ async function fillDetail(c) {
 }
 
 async function fillSheet(c) {
+  updateFavBtn(getFavorites().includes(c.name));
   document.getElementById('s-icon').textContent = c.weather.icon;
   document.getElementById('s-name').textContent = c.name;
   document.getElementById('s-region').textContent = c.region;
@@ -1182,7 +1267,7 @@ async function loadFood(listId, c) {
 }
 
 function tab(id) {
-  ['weather','food','photo'].forEach(t => {
+  ['weather','food','photo','info'].forEach(t => {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
@@ -1193,12 +1278,15 @@ function tab(id) {
   } else if (id === 'photo' && activeCourse) {
     clearFoodOverlays();
     loadPhoto('photo-list', activeCourse);
+  } else if (id === 'info' && activeCourse) {
+    clearFoodOverlays();
+    loadInfo('info-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
 }
 function stab(id) {
-  ['weather','food','photo'].forEach(t => {
+  ['weather','food','photo','info'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
@@ -1209,6 +1297,9 @@ function stab(id) {
   } else if (id === 'photo' && activeCourse) {
     clearFoodOverlays();
     loadPhoto('s-photo-list', activeCourse);
+  } else if (id === 'info' && activeCourse) {
+    clearFoodOverlays();
+    loadInfo('s-info-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
@@ -1268,6 +1359,188 @@ function retryCctv(prefix) {
   }
 }
 
+/* ── 정보 탭 ── */
+async function loadInfo(listId, c) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  el.innerHTML = '<p class="food-loading">🔍 골프장 정보를 불러오는 중...</p>';
+  const p = await fetchPlaceInfo(c.name);
+  const dirUrl = `https://map.kakao.com/link/to/${encodeURIComponent(c.name)},${c.lat},${c.lng}`;
+  const phone = p && p.phone ? p.phone : '';
+  const addr = p ? (p.road_address_name || p.address_name) : c.region;
+  const placeUrl = p ? p.place_url : '';
+  el.innerHTML = `
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e5e7eb;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:12px;">${c.name}</div>
+        <div style="font-size:13px;color:#4b5563;margin-bottom:6px;">📍 ${addr}</div>
+        ${phone ? `<div style="font-size:13px;color:#4b5563;margin-bottom:6px;">📞 <a href="tel:${phone}" style="color:#16a34a;font-weight:600;">${phone}</a></div>` : ''}
+        <div style="font-size:13px;color:#4b5563;margin-bottom:6px;">⛳ ${c.holes ? c.holes+'홀' : '–'} · ${c.type || '–'}</div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+          <a href="${dirUrl}" target="_blank" style="flex:1;min-width:110px;text-align:center;padding:10px 0;background:#fee2e2;border-radius:10px;color:#dc2626;font-weight:600;font-size:13px;text-decoration:none;">🗺️ 카카오 길찾기</a>
+          ${placeUrl ? `<a href="${placeUrl}" target="_blank" style="flex:1;min-width:110px;text-align:center;padding:10px 0;background:#eff6ff;border-radius:10px;color:#2563eb;font-weight:600;font-size:13px;text-decoration:none;">📍 카카오맵 보기</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── 즐겨찾기 ── */
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem('golfnono_favorites') || '[]'); } catch(e) { return []; }
+}
+function saveFavorites(favs) { localStorage.setItem('golfnono_favorites', JSON.stringify(favs)); }
+function toggleFavorite() {
+  if (!activeCourse) return;
+  const name = activeCourse.name;
+  let favs = getFavorites();
+  const idx = favs.indexOf(name);
+  if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
+  saveFavorites(favs);
+  updateFavBtn(favs.includes(name));
+  renderFavorites();
+}
+function updateFavBtn(isFav) {
+  ['fav-btn','s-fav-btn'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.textContent = isFav ? '♥' : '♡';
+  });
+}
+function renderFavorites() {
+  const favs = getFavorites();
+  const sec = document.getElementById('fav-section');
+  const list = document.getElementById('fav-list');
+  if (!sec || !list) return;
+  if (!favs.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  list.innerHTML = favs.map(name => {
+    const c = COURSES.find(x => x.name === name);
+    if (!c) return '';
+    return `<div onclick="selectCourse(c_${name.replace(/[^a-z0-9]/gi,'_')})" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f0fdf4;border-radius:10px;cursor:pointer;border:1px solid #bbf7d0;">
+      <div>
+        <div style="font-size:13px;font-weight:700;">${name}</div>
+        <div style="font-size:11px;color:#6b7280;">${c.region}</div>
+      </div>
+      <span style="color:#16a34a;font-size:18px;">♥</span>
+    </div>`;
+  }).join('');
+  // 클릭 이벤트 재설정
+  list.querySelectorAll('[onclick]').forEach((el, i) => {
+    const name = favs[i];
+    const c = COURSES.find(x => x.name === name);
+    if (!c) return;
+    el.removeAttribute('onclick');
+    el.addEventListener('click', () => selectCourse(c));
+  });
+}
+
+/* ── 내 주변 골프장 ── */
+let nearbyMode = false;
+function showNearby() {
+  const btn = document.getElementById('nearby-btn');
+  if (nearbyMode) { nearbyMode = false; btn.textContent = '📍 내 주변'; resetFilters(); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    nearbyMode = true;
+    btn.textContent = '🗺️ 전체보기';
+    const nearby = COURSES.filter(c => c.lat && c.lng)
+      .map(c => ({ ...c, distKm: getDistance(lat, lng, c.lat, c.lng) }))
+      .filter(c => c.distKm <= 30)
+      .sort((a, b) => a.distKm - b.distKm);
+    // 마커 표시 제어
+    COURSES.forEach(c => { if (c.marker) c.marker.setMap(null); });
+    nearby.forEach(c => { if (c.marker) c.marker.setMap(map); });
+    document.getElementById('cnt').textContent = nearby.length + '개';
+    // 사이드바 웰컴에 목록 표시
+    const welcome = document.getElementById('welcome');
+    let nearbyHtml = `<div style="width:100%;margin-top:16px;"><div style="font-size:13px;font-weight:700;margin-bottom:8px;text-align:left;">📍 30km 내 골프장 (${nearby.length}개)</div>`;
+    nearby.slice(0, 20).forEach(c => {
+      nearbyHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-radius:8px;margin-bottom:4px;cursor:pointer;border:1px solid #e5e7eb;" onclick="selectCourse_obj(${JSON.stringify({name:c.name,lat:c.lat,lng:c.lng})})">
+        <div><div style="font-size:13px;font-weight:700;">${c.name}</div><div style="font-size:11px;color:#6b7280;">${c.region}</div></div>
+        <span style="font-size:12px;color:#16a34a;font-weight:600;">${c.distKm.toFixed(1)}km</span>
+      </div>`;
+    });
+    nearbyHtml += '</div>';
+    let nearbyDiv = document.getElementById('nearby-list');
+    if (!nearbyDiv) { nearbyDiv = document.createElement('div'); nearbyDiv.id = 'nearby-list'; welcome.appendChild(nearbyDiv); }
+    nearbyDiv.innerHTML = nearbyHtml;
+    nearbyDiv.querySelectorAll('[onclick]').forEach(el => {
+      const data = JSON.parse(el.getAttribute('onclick').replace("selectCourse_obj(","").replace(")",""));
+      el.removeAttribute('onclick');
+      const c = COURSES.find(x => x.name === data.name);
+      if (c) el.addEventListener('click', () => selectCourse(c));
+    });
+  }, () => alert('위치 정보를 가져올 수 없습니다.'));
+}
+
+/* ── 필터 ── */
+function applyFilters() {
+  const region = (document.getElementById('filter-region') || document.getElementById('m-filter-region'))?.value || '';
+  const holes = (document.getElementById('filter-holes') || document.getElementById('m-filter-holes'))?.value || '';
+  const type = (document.getElementById('filter-type') || document.getElementById('m-filter-type'))?.value || '';
+  let count = 0;
+  COURSES.forEach(c => {
+    if (!c.marker) return;
+    const regionMatch = !region || c.region.includes(region);
+    const holesMatch = !holes || (holes === '36' ? c.holes >= 36 : c.holes == holes);
+    const typeMatch = !type || (c.type || '').includes(type);
+    const show = regionMatch && holesMatch && typeMatch;
+    c.marker.setMap(show ? map : null);
+    if (show) count++;
+  });
+  document.getElementById('cnt').textContent = count + '개';
+  // 모바일 필터도 동기화
+  ['filter-region','m-filter-region'].forEach(id => { const el=document.getElementById(id); if(el&&region) el.value=region; });
+  ['filter-holes','m-filter-holes'].forEach(id => { const el=document.getElementById(id); if(el&&holes) el.value=holes; });
+  ['filter-type','m-filter-type'].forEach(id => { const el=document.getElementById(id); if(el&&type) el.value=type; });
+}
+function resetFilters() {
+  ['filter-region','filter-holes','filter-type','m-filter-region','m-filter-holes','m-filter-type'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  COURSES.forEach(c => { if (c.marker && c.lat && c.lng) c.marker.setMap(map); });
+  document.getElementById('cnt').textContent = COURSES.filter(c=>c.lat&&c.lng).length + '개';
+  nearbyMode = false;
+  const btn = document.getElementById('nearby-btn');
+  if (btn) btn.textContent = '📍 내 주변';
+  const nd = document.getElementById('nearby-list');
+  if (nd) nd.innerHTML = '';
+}
+
+/* ── 오늘의 TOP5 ── */
+async function loadTop5() {
+  const el = document.getElementById('top5-list');
+  if (!el) return;
+  el.innerHTML = Array(5).fill('<div style="height:64px;background:#f3f4f6;border-radius:10px;animation:pulse 1.2s infinite;"></div>').join('');
+  const pool = COURSES.filter(c => c.lat && c.lng);
+  const sample = pool.sort(() => Math.random() - 0.5).slice(0, 12);
+  const results = await Promise.all(sample.map(async c => {
+    const w = await fetchWeather(c).catch(() => null);
+    if (!w) return null;
+    const { total } = calcGolfIndex(w);
+    return { ...c, weather: w, score: total };
+  }));
+  const top5 = results.filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 5);
+  if (!top5.length) { el.innerHTML = '<p style="font-size:12px;color:#9ca3af;text-align:center;">날씨 정보를 불러올 수 없습니다</p>'; return; }
+  el.innerHTML = top5.map((c, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:10px;border:1px solid #e5e7eb;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);" data-name="${c.name}">
+      <div style="width:24px;height:24px;border-radius:50%;background:${i===0?'#f59e0b':i===1?'#9ca3af':i===2?'#b45309':'#e5e7eb'};color:${i<3?'#fff':'#6b7280'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${i+1}</div>
+      <div style="font-size:20px;">${c.weather.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.name}</div>
+        <div style="font-size:11px;color:#6b7280;">${c.region}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:12px;font-weight:700;color:#15803d;">${c.score}점</div>
+        <div style="font-size:11px;color:#6b7280;">${c.weather.temp}°C</div>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-name]').forEach(card => {
+    const name = card.getAttribute('data-name');
+    const c = COURSES.find(x => x.name === name);
+    if (c) card.addEventListener('click', () => selectCourse(c));
+  });
+}
+
 /* ── 바텀시트 스와이프 닫기 ── */
 (function() {
   const sheet = document.getElementById('sheet');
@@ -1289,6 +1562,15 @@ function retryCctv(prefix) {
     if (dy > 80) closeSheet();
   });
 })();
+
+// 초기화
+renderFavorites();
+loadTop5();
+// 모바일 필터 표시
+if (window.innerWidth < 768) {
+  const mf = document.getElementById('mobile-filter');
+  if (mf) mf.style.display = 'block';
+}
 </script>
 <!-- 첫 방문자 인트로 팝업 -->
 <div id="intro-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:16px;">
@@ -1330,6 +1612,7 @@ function retryCctv(prefix) {
 </div>
 <style>
 @keyframes introFadeOut { from { opacity:1; } to { opacity:0; } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 .intro-hiding { animation: introFadeOut 0.4s ease forwards; }
 </style>
 <script>
