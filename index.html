@@ -727,9 +727,9 @@ async function fillDetail(c) {
   document.getElementById('d-icon').textContent = c.weather.icon;
   document.getElementById('d-name').textContent = c.name;
   document.getElementById('d-region').textContent = c.region;
-  document.getElementById('d-rating').textContent = '★'.repeat(Math.round(c.rating)) + '  ' + c.rating.toFixed(1);
-  document.getElementById('d-temp').textContent = c.weather.temp + '°C';
-  document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  document.getElementById('d-rating').textContent = c.rating ? '★'.repeat(Math.round(c.rating)) + '  ' + c.rating.toFixed(1) : '';
+  document.getElementById('d-temp').textContent = (c.weather?.temp ?? '–') + '°C';
+  document.getElementById('d-tags').innerHTML = (c.tags || [c.holes ? c.holes + '홀' : '', c.type].filter(Boolean)).map(t => `<span class="tag">${t}</span>`).join('');
   const card = document.getElementById('golf-index-card');
   if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('windy-iframe', c);
@@ -759,8 +759,8 @@ async function fillSheet(c) {
   document.getElementById('s-icon').textContent = c.weather.icon;
   document.getElementById('s-name').textContent = c.name;
   document.getElementById('s-region').textContent = c.region;
-  document.getElementById('s-temp').textContent = c.weather.temp + '°C';
-  document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  document.getElementById('s-temp').textContent = (c.weather?.temp ?? '–') + '°C';
+  document.getElementById('s-tags').innerHTML = (c.tags || [c.holes ? c.holes + '홀' : '', c.type].filter(Boolean)).map(t => `<span class="tag">${t}</span>`).join('');
   const card = document.getElementById('s-golf-index-card');
   if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('s-windy-iframe', c);
@@ -1032,18 +1032,23 @@ function selectCourse(course) {
     if (!results.length) {
       dropdown.innerHTML = '<div class="search-empty">검색 결과가 없습니다</div>';
     } else {
-      dropdown.innerHTML = results.map(c => `
-        <div class="search-item" data-name="${c.name}">
-          <div class="search-item-name">${c.name}</div>
-          <div class="search-item-region">${c.region}</div>
-        </div>`).join('');
-      dropdown.querySelectorAll('.search-item').forEach(el => {
-        el.addEventListener('mousedown', e => {
+      dropdown.innerHTML = '';
+      results.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'search-item';
+        item.innerHTML = `<div class="search-item-name">${c.name}</div><div class="search-item-region">${c.region}</div>`;
+        item.onmousedown = function(e) {
           e.preventDefault();
-          const c = COURSES.find(x => x.name === el.dataset.name);
-          if (!c) return;
-          selectCourse(c);
-        });
+          document.getElementById('search-input').value = c.name;
+          dropdown.classList.remove('open');
+          const latlng = new kakao.maps.LatLng(c.lat, c.lng);
+          map.setCenter(latlng);
+          map.setLevel(5);
+          if (c.marker) {
+            kakao.maps.event.trigger(c.marker, 'click');
+          }
+        };
+        dropdown.appendChild(item);
       });
     }
     dropdown.classList.add('open');
