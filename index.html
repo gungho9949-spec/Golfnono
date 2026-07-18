@@ -678,7 +678,7 @@ async function select(c, marker) {
   }
 }
 
-function fillDetail(c) {
+async function fillDetail(c) {
   document.getElementById('welcome').style.display = 'none';
   document.getElementById('detail').style.display = 'flex';
   document.getElementById('d-icon').textContent = c.weather.icon;
@@ -687,28 +687,93 @@ function fillDetail(c) {
   document.getElementById('d-rating').textContent = '★'.repeat(Math.round(c.rating)) + '  ' + c.rating.toFixed(1);
   document.getElementById('d-temp').textContent = c.weather.temp + '°C';
   document.getElementById('d-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
-  fillWeather('w', c);
-  renderGolfIndex('golf-index-card', c.weather);
+  const card = document.getElementById('golf-index-card');
+  if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('windy-iframe', c);
   loadCctv(c, 'cctv-video', 'cctv-select', 'cctv-overlay', 'cctv-overlay-msg', 'cctv-meta');
   document.querySelectorAll('#p-weather .r-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('#p-weather .r-btn:nth-child(2)').classList.add('on');
   tab('weather');
+  const live = await fetchWeather(c);
+  const weather = live || c.weather;
+  if (live) {
+    document.getElementById('d-icon').textContent = live.icon;
+    document.getElementById('d-temp').textContent = live.temp + '°C';
+  }
+  fillWeather('w', { weather });
+  renderGolfIndex('golf-index-card', weather);
 }
 
-function fillSheet(c) {
+async function fillSheet(c) {
   document.getElementById('s-icon').textContent = c.weather.icon;
   document.getElementById('s-name').textContent = c.name;
   document.getElementById('s-region').textContent = c.region;
   document.getElementById('s-temp').textContent = c.weather.temp + '°C';
   document.getElementById('s-tags').innerHTML = c.tags.map(t => `<span class="tag">${t}</span>`).join('');
-  fillWeather('sw', c);
-  renderGolfIndex('s-golf-index-card', c.weather);
+  const card = document.getElementById('s-golf-index-card');
+  if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('s-windy-iframe', c);
   loadCctv(c, 's-cctv-video', 's-cctv-select', 's-cctv-overlay', 's-cctv-overlay-msg', 's-cctv-meta');
   document.querySelectorAll('#sp-weather .r-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('#sp-weather .r-btn:nth-child(2)').classList.add('on');
   stab('weather');
+  const live = await fetchWeather(c);
+  const weather = live || c.weather;
+  if (live) {
+    document.getElementById('s-icon').textContent = live.icon;
+    document.getElementById('s-temp').textContent = live.temp + '°C';
+  }
+  fillWeather('sw', { weather });
+  renderGolfIndex('s-golf-index-card', weather);
+}
+
+const OWM_KEY = '9c92595dbd15ee90bf34815883c7da8c';
+
+function windDegToDir(deg) {
+  const dirs = ['북','북동','동','남동','남','남서','서','북서'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function owmIcon(code) {
+  const map = {
+    '01d':'☀️','01n':'🌙','02d':'⛅','02n':'⛅',
+    '03d':'🌥️','03n':'🌥️','04d':'☁️','04n':'☁️',
+    '09d':'🌧️','09n':'🌧️','10d':'🌦️','10n':'🌦️',
+    '11d':'⛈️','11n':'⛈️','13d':'❄️','13n':'❄️',
+    '50d':'🌫️','50n':'🌫️',
+  };
+  return map[code] || '🌤️';
+}
+
+async function fetchWeather(c) {
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${c.lat}&lon=${c.lng}&appid=${OWM_KEY}&units=metric&lang=kr`);
+    if (!res.ok) throw new Error('OWM fetch failed');
+    const d = await res.json();
+    const weather = {
+      icon: owmIcon(d.weather[0].icon),
+      temp: Math.round(d.main.temp),
+      desc: d.weather[0].description,
+      wind: `${windDegToDir(d.wind.deg)} ${d.wind.speed}m/s`,
+      hum: d.main.humidity + '%',
+      vis: (d.visibility / 1000).toFixed(1) + 'km',
+      rain: '–',
+      uv: '–',
+    };
+    try {
+      const res2 = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${c.lat}&lon=${c.lng}&appid=${OWM_KEY}&units=metric&lang=kr&exclude=minutely,hourly,daily,alerts`);
+      if (res2.ok) {
+        const d2 = await res2.json();
+        if (d2.current) {
+          weather.uv = `UV ${Math.round(d2.current.uvi ?? 0)}`;
+          weather.rain = `강수확률 ${Math.round((d2.current.pop ?? 0) * 100)}%`;
+        }
+      }
+    } catch(e) { /* One Call 실패 시 무시 */ }
+    return weather;
+  } catch(e) {
+    return null;
+  }
 }
 
 function windyUrl(lat, lng, overlay) {
