@@ -497,11 +497,13 @@ document.getElementById('cnt').textContent = COURSES.length + '개';
 
 const markerMap = {};
 COURSES.forEach(c => {
+  if (!c.lat || !c.lng) return;
   const marker = new kakao.maps.Marker({
     position: new kakao.maps.LatLng(c.lat, c.lng),
     map, image: normalImg, title: c.name
   });
-  markerMap[c.id] = marker;
+  c.marker = marker;
+  markerMap[c.name] = marker;
   kakao.maps.event.addListener(marker, 'click', () => select(c, marker));
 });
 
@@ -566,7 +568,8 @@ async function loadGolfCourses() {
             position: new kakao.maps.LatLng(course.lat, course.lng),
             map, image: normalImg, title: course.name,
           });
-          markerMap[course.id] = marker;
+          course.marker = marker;
+          markerMap[course.name] = marker;
           kakao.maps.event.addListener(marker, 'click', () => select(course, marker));
           added++;
         }
@@ -1004,6 +1007,17 @@ function goHome() {
 }
 
 /* ── 검색 ── */
+function selectCourse(course) {
+  const center = new kakao.maps.LatLng(course.lat, course.lng);
+  map.setCenter(center);
+  map.setLevel(5);
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-dropdown').classList.remove('open');
+  if (course.marker) {
+    kakao.maps.event.trigger(course.marker, 'click');
+  }
+}
+
 (function() {
   const input = document.getElementById('search-input');
   const dropdown = document.getElementById('search-dropdown');
@@ -1019,40 +1033,16 @@ function goHome() {
       dropdown.innerHTML = '<div class="search-empty">검색 결과가 없습니다</div>';
     } else {
       dropdown.innerHTML = results.map(c => `
-        <div class="search-item" data-id="${c.id}">
+        <div class="search-item" data-name="${c.name}">
           <div class="search-item-name">${c.name}</div>
           <div class="search-item-region">${c.region}</div>
         </div>`).join('');
       dropdown.querySelectorAll('.search-item').forEach(el => {
         el.addEventListener('mousedown', e => {
           e.preventDefault();
-          const c = COURSES.find(x => x.id === el.dataset.id);
+          const c = COURSES.find(x => x.name === el.dataset.name);
           if (!c) return;
-          closeDropdown();
-          const marker = markerMap[c.id];
-          if (activeMarker) activeMarker.setImage(normalImg);
-          activeMarker = marker;
-          marker.setImage(activeImg);
-          map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
-          map.setLevel(7);
-          clearFoodOverlays();
-          activeCourse = c;
-          fetchWeather(c).then(weather => {
-            const course = { ...c, weather };
-            activeCourse = course;
-            if (window.innerWidth < 768) {
-              const sh2 = document.getElementById('sheet');
-              const shHdr2 = document.getElementById('sheet-header');
-              fillSheet(course);
-              sh2.scrollTop = 0;
-              sh2.classList.add('open');
-              if (shHdr2) shHdr2.style.display = 'flex';
-              const homeBtn2 = document.getElementById('home-btn');
-              if (homeBtn2) homeBtn2.style.display = 'flex';
-            } else {
-              fillDetail(course);
-            }
-          });
+          selectCourse(c);
         });
       });
     }
