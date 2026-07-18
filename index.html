@@ -1027,14 +1027,17 @@ function goHome() {
 
 /* ── 검색 ── */
 function selectCourse(course) {
-  const center = new kakao.maps.LatLng(course.lat, course.lng);
-  map.setCenter(center);
-  map.setLevel(5);
+  const results = document.getElementById('search-results');
+  if (results) results.style.display = 'none';
   document.getElementById('search-input').value = '';
   document.getElementById('search-dropdown').classList.remove('open');
-  if (course.marker) {
-    kakao.maps.event.trigger(course.marker, 'click');
-  }
+  if (!course.lat || course.lat === 0) return;
+  const latlng = new kakao.maps.LatLng(course.lat, course.lng);
+  map.setCenter(latlng);
+  map.setLevel(5);
+  setTimeout(function() {
+    if (course.marker) kakao.maps.event.trigger(course.marker, 'click');
+  }, 150);
 }
 
 (function() {
@@ -1058,14 +1061,11 @@ function selectCourse(course) {
         item.innerHTML = `<div class="search-item-name">${c.name}</div><div class="search-item-region">${c.region}</div>`;
         item.onmousedown = function(e) {
           e.preventDefault();
-          document.getElementById('search-input').value = c.name;
-          dropdown.classList.remove('open');
-          const latlng = new kakao.maps.LatLng(c.lat, c.lng);
-          map.setCenter(latlng);
-          map.setLevel(5);
-          if (c.marker) {
-            kakao.maps.event.trigger(c.marker, 'click');
-          }
+          selectCourse(c);
+        };
+        item.ontouchend = function(e) {
+          e.preventDefault();
+          selectCourse(c);
         };
         dropdown.appendChild(item);
       });
@@ -1081,6 +1081,12 @@ function selectCourse(course) {
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeDropdown();
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(function() {
+      dropdown.classList.remove('open');
+    }, 300);
   });
 
   document.addEventListener('click', e => {
