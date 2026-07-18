@@ -411,15 +411,16 @@ header {
   </div>
 </div>
 
+<!-- 모바일 바텀시트 헤더 (fixed 독립 레이어) -->
+<div id="sheet-header" style="display:none;position:fixed;top:10vh;left:0;right:0;z-index:1001;background:#fff;border-radius:22px 22px 0 0;padding:12px 16px 10px;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f0;box-shadow:0 2px 4px rgba(0,0,0,.04);">
+  <div style="position:absolute;left:50%;transform:translateX(-50%);top:6px;width:44px;height:5px;background:#d1d5db;border-radius:3px;"></div>
+  <button onclick="closeSheet();goHome();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;">🏠</button>
+  <button onclick="closeSheet();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+</div>
+
 <!-- 모바일 바텀시트 -->
 <div id="sheet">
-  <div style="position:sticky;top:0;left:0;right:0;z-index:9999;background:#fff;border-radius:22px 22px 0 0;display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid #f0f0f0;">
-    <div style="position:absolute;left:50%;transform:translateX(-50%);top:6px;width:44px;height:5px;background:#d1d5db;border-radius:3px;"></div>
-    <button onclick="closeSheet();goHome();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;">🏠</button>
-    <button onclick="closeSheet();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
-  </div>
-
-  <div class="d-head" style="margin-top:8px;">
+  <div class="d-head" style="margin-top:8px;padding-top:56px;">
     <div class="d-top">
       <div class="d-icon" id="s-icon">⛅</div>
       <div class="d-info">
@@ -760,9 +761,11 @@ async function select(c, marker) {
   activeCourse = course;
   if (window.innerWidth < 768) {
     const sh = document.getElementById('sheet');
+    const shHdr = document.getElementById('sheet-header');
     fillSheet(course);
     sh.scrollTop = 0;
     sh.classList.add('open');
+    if (shHdr) shHdr.style.display = 'flex';
   } else {
     fillDetail(course);
   }
@@ -1076,9 +1079,11 @@ function goHome() {
             activeCourse = course;
             if (window.innerWidth < 768) {
               const sh2 = document.getElementById('sheet');
+              const shHdr2 = document.getElementById('sheet-header');
               fillSheet(course);
               sh2.scrollTop = 0;
               sh2.classList.add('open');
+              if (shHdr2) shHdr2.style.display = 'flex';
             } else {
               fillDetail(course);
             }
@@ -1212,6 +1217,8 @@ function stab(id) {
 }
 function closeSheet() {
   document.getElementById('sheet').classList.remove('open');
+  const shHdr = document.getElementById('sheet-header');
+  if (shHdr) shHdr.style.display = 'none';
 }
 
 /* ── CCTV 재시도 ── */
