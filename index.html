@@ -286,7 +286,8 @@ header {
 
 /* 모바일 */
 @media (max-width: 767px) {
-  .locate-btn { position: fixed; bottom: 90px; right: 16px; z-index: 500; }
+  .locate-btn { position: fixed !important; bottom: 90px !important; right: 16px !important; z-index: 500 !important; }
+  #home-fab { bottom: 20px !important; right: 16px !important; z-index: 300 !important; }
   #sidebar { display: none; }
   #map { width: 100%; }
   #sheet {
@@ -1176,7 +1177,7 @@ function tab(id) {
   });
   if (id === 'food' && activeCourse) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
-    map.setLevel(8);
+    map.setLevel(9);
     loadFood('food-list', activeCourse);
   } else {
     clearFoodOverlays();
@@ -1189,7 +1190,7 @@ function stab(id) {
   });
   if (id === 'food' && activeCourse) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
-    map.setLevel(8);
+    map.setLevel(9);
     loadFood('s-food-list', activeCourse);
   } else {
     clearFoodOverlays();
