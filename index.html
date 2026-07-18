@@ -1232,8 +1232,6 @@ async function loadPhoto(listId, c) {
     el.innerHTML = '<p class="food-loading">정보를 찾을 수 없습니다.</p>';
     return;
   }
-  const stars = p.place_name ? Math.round(Math.random() * 5) : 0;
-  const starHtml = '★'.repeat(stars) + '☆'.repeat(5 - stars);
   const cat = p.category_name ? p.category_name.split(' > ').pop() : '';
   const phone = p.phone ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">📞 ${p.phone}</div>` : '';
   const addr = p.address_name ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">📍 ${p.road_address_name || p.address_name}</div>` : '';
@@ -1242,7 +1240,7 @@ async function loadPhoto(listId, c) {
       <div style="background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e5e7eb;">
         <div style="font-weight:700;font-size:16px;margin-bottom:6px;">${p.place_name}</div>
         <div style="font-size:12px;color:#16a34a;font-weight:600;margin-bottom:8px;">${cat}</div>
-        <div style="font-size:20px;color:#f59e0b;letter-spacing:2px;margin-bottom:4px;">${starHtml}</div>
+        <div style="font-size:13px;color:#f59e0b;font-weight:600;margin-bottom:8px;">⭐ 별점·리뷰수는 카카오맵에서 확인 가능</div>
         ${addr}${phone}
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
           <a href="${p.place_url}" target="_blank" style="flex:1;min-width:120px;text-align:center;padding:10px 0;background:#fee;border-radius:10px;color:#dc2626;font-weight:600;font-size:13px;text-decoration:none;">📷 카카오맵 사진 보기</a>
