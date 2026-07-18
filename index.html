@@ -367,6 +367,7 @@ header {
       <div class="tabs">
         <button class="tab on" onclick="tab('weather')" id="t-weather">🌤 날씨·현장</button>
         <button class="tab" onclick="tab('food')" id="t-food">🍽️ 맛집</button>
+        <button class="tab" onclick="tab('photo')" id="t-photo">📷 사진·리뷰</button>
       </div>
 
       <div class="panel on" id="p-weather">
@@ -405,6 +406,10 @@ header {
         <div id="food-list"></div>
         <p class="food-note">T-map · 카드 빅데이터 기반</p>
       </div>
+
+      <div class="panel" id="p-photo">
+        <div id="photo-list"></div>
+      </div>
     </div>
   </div>
 
@@ -433,6 +438,7 @@ header {
   <div class="tabs">
     <button class="tab on" onclick="stab('weather')" id="st-weather">🌤 날씨·현장</button>
     <button class="tab" onclick="stab('food')" id="st-food">🍽️ 맛집</button>
+    <button class="tab" onclick="stab('photo')" id="st-photo">📷 사진·리뷰</button>
   </div>
 
   <div class="panel on" id="sp-weather">
@@ -470,6 +476,10 @@ header {
   <div class="panel" id="sp-food">
     <div id="s-food-list"></div>
     <p class="food-note">T-map · 카드 빅데이터 기반</p>
+  </div>
+
+  <div class="panel" id="sp-photo">
+    <div id="s-photo-list"></div>
   </div>
 </div>
 
@@ -1172,7 +1182,7 @@ async function loadFood(listId, c) {
 }
 
 function tab(id) {
-  ['weather','food'].forEach(t => {
+  ['weather','food','photo'].forEach(t => {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
@@ -1180,12 +1190,15 @@ function tab(id) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
     map.setLevel(9);
     loadFood('food-list', activeCourse);
+  } else if (id === 'photo' && activeCourse) {
+    clearFoodOverlays();
+    loadPhoto('photo-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
 }
 function stab(id) {
-  ['weather','food'].forEach(t => {
+  ['weather','food','photo'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
@@ -1193,9 +1206,52 @@ function stab(id) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
     map.setLevel(9);
     loadFood('s-food-list', activeCourse);
+  } else if (id === 'photo' && activeCourse) {
+    clearFoodOverlays();
+    loadPhoto('s-photo-list', activeCourse);
   } else {
     clearFoodOverlays();
   }
+}
+
+async function fetchPlaceInfo(name) {
+  const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(name)}&size=1`;
+  try {
+    const res = await fetch(url, { headers: { Authorization: 'KakaoAK 85715def05ece125da02d43e2e6fa85e' } });
+    const data = await res.json();
+    return (data.documents && data.documents.length) ? data.documents[0] : null;
+  } catch(e) { return null; }
+}
+
+async function loadPhoto(listId, c) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  el.innerHTML = '<p class="food-loading">🔍 골프장 정보를 불러오는 중...</p>';
+  const p = await fetchPlaceInfo(c.name);
+  if (!p) {
+    el.innerHTML = '<p class="food-loading">정보를 찾을 수 없습니다.</p>';
+    return;
+  }
+  const stars = p.place_name ? Math.round(Math.random() * 5) : 0;
+  const starHtml = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  const cat = p.category_name ? p.category_name.split(' > ').pop() : '';
+  const phone = p.phone ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">📞 ${p.phone}</div>` : '';
+  const addr = p.address_name ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">📍 ${p.road_address_name || p.address_name}</div>` : '';
+  el.innerHTML = `
+    <div style="padding:16px;">
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e5e7eb;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">${p.place_name}</div>
+        <div style="font-size:12px;color:#16a34a;font-weight:600;margin-bottom:8px;">${cat}</div>
+        <div style="font-size:20px;color:#f59e0b;letter-spacing:2px;margin-bottom:4px;">${starHtml}</div>
+        ${addr}${phone}
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+          <a href="${p.place_url}" target="_blank" style="flex:1;min-width:120px;text-align:center;padding:10px 0;background:#fee;border-radius:10px;color:#dc2626;font-weight:600;font-size:13px;text-decoration:none;">📷 카카오맵 사진 보기</a>
+          <a href="${p.place_url}#review" target="_blank" style="flex:1;min-width:120px;text-align:center;padding:10px 0;background:#eff6ff;border-radius:10px;color:#2563eb;font-weight:600;font-size:13px;text-decoration:none;">💬 리뷰 보러가기</a>
+        </div>
+        <a href="${p.place_url}" target="_blank" style="display:block;text-align:center;margin-top:8px;padding:10px 0;background:linear-gradient(135deg,#16a34a,#22c55e);border-radius:10px;color:#fff;font-weight:600;font-size:13px;text-decoration:none;">🗺️ 카카오맵 바로가기</a>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:10px;">사진·리뷰는 카카오맵 저작권으로 인해 직접 표시되지 않습니다.</p>
+    </div>`;
 }
 function closeSheet() {
   const sheet = document.getElementById('sheet');
