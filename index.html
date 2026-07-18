@@ -1290,6 +1290,64 @@ function retryCctv(prefix) {
   });
 })();
 </script>
+<!-- 첫 방문자 인트로 팝업 -->
+<div id="intro-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:16px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.32);">
+    <!-- 헤더 -->
+    <div style="background:linear-gradient(135deg,#15803d,#22c55e);border-radius:16px 16px 0 0;padding:28px 24px 22px;text-align:center;">
+      <div style="font-size:44px;margin-bottom:8px;">⛳</div>
+      <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.5px;">Golfnono</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.88);margin-top:6px;font-weight:500;">골프장 실시간 날씨 · 맛집 정보</div>
+    </div>
+    <!-- 기능 소개 카드 -->
+    <div style="padding:20px 20px 8px;">
+      <div style="font-size:13px;color:#6b7280;text-align:center;margin-bottom:16px;">전국 541개 골프장 정보를 한눈에</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;background:#f0fdf4;border-radius:12px;padding:12px 14px;">
+          <span style="font-size:26px;flex-shrink:0;">⛅</span>
+          <div><div style="font-weight:700;font-size:14px;color:#15803d;">실시간 날씨 + 골프 날씨 지수</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">지금 라운딩 가능한지 점수로 확인</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;background:#eff6ff;border-radius:12px;padding:12px 14px;">
+          <span style="font-size:26px;flex-shrink:0;">🌧️</span>
+          <div><div style="font-weight:700;font-size:14px;color:#1d4ed8;">비·바람 예보 레이더</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">Windy 기반 골프 특화 날씨 지도</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;background:#fff7ed;border-radius:12px;padding:12px 14px;">
+          <span style="font-size:26px;flex-shrink:0;">🍽️</span>
+          <div><div style="font-weight:700;font-size:14px;color:#c2410c;">주변 맛집 Top 10</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">골프장 3km 반경 인기 맛집</div></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;background:#faf5ff;border-radius:12px;padding:12px 14px;">
+          <span style="font-size:26px;flex-shrink:0;">🔍</span>
+          <div><div style="font-weight:700;font-size:14px;color:#7c3aed;">전국 541개 골프장</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">이름 검색 또는 지도에서 바로 클릭</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- 시작 버튼 -->
+    <div style="padding:16px 20px 24px;text-align:center;">
+      <button id="intro-start-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#15803d,#22c55e);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,0.35);">시작하기</button>
+      <div style="font-size:11px;color:#9ca3af;margin-top:10px;">다음부터는 이 화면이 나오지 않아요</div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes introFadeOut { from { opacity:1; } to { opacity:0; } }
+.intro-hiding { animation: introFadeOut 0.4s ease forwards; }
+</style>
+<script>
+(function() {
+  const overlay = document.getElementById('intro-overlay');
+  if (!localStorage.getItem('golfnono_visited')) {
+    overlay.style.display = 'flex';
+  } else {
+    overlay.style.display = 'none';
+  }
+  document.getElementById('intro-start-btn').addEventListener('click', function() {
+    localStorage.setItem('golfnono_visited', 'true');
+    overlay.classList.add('intro-hiding');
+    setTimeout(function() { overlay.style.display = 'none'; }, 400);
+  });
+})();
+</script>
+
 <button id="home-fab" onclick="closeSheet(); setTimeout(goHome, 50);" style="display:none;position:fixed;bottom:24px;left:16px;z-index:300;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;box-shadow:0 6px 20px rgba(22,163,74,0.55),0 2px 8px rgba(0,0,0,0.25);cursor:pointer;align-items:center;justify-content:center;">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
 </button>
