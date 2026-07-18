@@ -851,6 +851,10 @@ function calcGolfIndex(weather) {
 function renderGolfIndex(cardId, weather) {
   const el = document.getElementById(cardId);
   if (!el) return;
+  if (!weather) {
+    el.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 데이터 없음</div>';
+    return;
+  }
   const { total, label, tags } = calcGolfIndex(weather);
   const color = total >= 80 ? '#15803d' : total >= 55 ? '#ca8a04' : total >= 30 ? '#ea580c' : '#dc2626';
   el.innerHTML = `
