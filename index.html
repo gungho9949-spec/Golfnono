@@ -561,6 +561,79 @@ COURSES.forEach(c => {
 
 const OWM_KEY = '9c92595dbd15ee90bf34815883c7da8c';
 
+// 카카오 로컬 API 전국 골프장 검색
+const GEO_REGIONS = [
+  { name:'서울',   y:37.5665, x:126.9780 },
+  { name:'경기북부', y:37.9010, x:127.0600 },
+  { name:'경기남부', y:37.2750, x:127.0095 },
+  { name:'경기동부', y:37.4500, x:127.4500 },
+  { name:'경기서부', y:37.5000, x:126.7500 },
+  { name:'인천',   y:37.4563, x:126.7052 },
+  { name:'강원영서', y:37.8500, x:127.7500 },
+  { name:'강원영동', y:37.7500, x:128.9000 },
+  { name:'충북',   y:36.8000, x:127.7000 },
+  { name:'충남',   y:36.6500, x:126.9000 },
+  { name:'대전',   y:36.3504, x:127.3845 },
+  { name:'세종',   y:36.4800, x:127.2890 },
+  { name:'전북',   y:35.8200, x:127.1500 },
+  { name:'전남',   y:34.8160, x:126.4630 },
+  { name:'광주',   y:35.1595, x:126.8526 },
+  { name:'경북',   y:36.5760, x:128.5050 },
+  { name:'경남',   y:35.4600, x:128.2130 },
+  { name:'대구',   y:35.8714, x:128.6014 },
+  { name:'부산',   y:35.1796, x:129.0756 },
+  { name:'울산',   y:35.5384, x:129.3114 },
+  { name:'제주',   y:33.4890, x:126.4983 },
+];
+
+function makeCourseFromPlace(p) {
+  return {
+    id: 'api_' + p.id,
+    name: p.place_name,
+    region: p.road_address_name || p.address_name || '',
+    lat: parseFloat(p.y),
+    lng: parseFloat(p.x),
+    rating: 4.5,
+    tags: ['골프장'],
+    weather: { icon:'⛅', temp:20, desc:'–', wind:'–', hum:'–', uv:'–', vis:'–', rain:'–' },
+    restaurants: [],
+  };
+}
+
+async function loadGolfCourses() {
+  const seen = new Set(COURSES.map(c => c.name));
+  let added = 0;
+  for (const region of GEO_REGIONS) {
+    try {
+      for (let page = 1; page <= 3; page++) {
+        const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=골프장&y=${region.y}&x=${region.x}&radius=50000&size=15&page=${page}`;
+        const res = await fetch(url, { headers: { Authorization: `KakaoAK ${KAKAO_REST_KEY}` } });
+        if (!res.ok) break;
+        const data = await res.json();
+        const places = data.documents || [];
+        for (const p of places) {
+          if (seen.has(p.place_name)) continue;
+          seen.add(p.place_name);
+          const course = makeCourseFromPlace(p);
+          const marker = new kakao.maps.Marker({
+            position: new kakao.maps.LatLng(course.lat, course.lng),
+            map, image: normalImg, title: course.name,
+          });
+          markerMap[course.id] = marker;
+          kakao.maps.event.addListener(marker, 'click', () => select(course, marker));
+          added++;
+        }
+        if (places.length < 15 || data.meta?.is_end) break;
+        await new Promise(r => setTimeout(r, 120));
+      }
+    } catch(e) { /* 지역 검색 실패 시 무시 */ }
+    await new Promise(r => setTimeout(r, 80));
+  }
+  document.getElementById('cnt').textContent = (COURSES.length + added) + '개';
+}
+
+loadGolfCourses();
+
 const WIND_DIR = ['북','북북동','북동','동북동','동','동남동','남동','남남동','남','남남서','남서','서남서','서','서북서','북서','북북서'];
 function windDir(deg) { return WIND_DIR[Math.round(deg / 22.5) % 16]; }
 
