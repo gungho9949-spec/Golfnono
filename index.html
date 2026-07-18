@@ -1152,6 +1152,7 @@ async function loadFood(listId, c) {
   if (!el) return;
   el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
   const places = await fetchRestaurants(c.lat, c.lng);
+  console.log('[loadFood]', listId, 'places:', places.length, places);
   clearFoodOverlays();
   showRadiusCircle(c);
   if (!places.length) {
