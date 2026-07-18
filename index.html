@@ -560,6 +560,7 @@ COURSES.forEach(c => {
 });
 
 const OWM_KEY = '9c92595dbd15ee90bf34815883c7da8c';
+const KAKAO_REST_KEY = '85715def05ece125da02d43e2e6fa85e';
 
 // 카카오 로컬 API 전국 골프장 검색
 const GEO_REGIONS = [
@@ -1113,8 +1114,6 @@ function fillWeather(p, c) {
   set(p+'-uv', w.uv);
   set(p+'-vis', '시야 ' + w.vis);
 }
-
-const KAKAO_REST_KEY = '85715def05ece125da02d43e2e6fa85e';
 
 async function fetchRestaurants(c) {
   try {
