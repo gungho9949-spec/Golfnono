@@ -719,6 +719,21 @@ async function select(c, marker) {
   } else {
     fillDetail(course);
   }
+  setTimeout(function() {
+    const isMobile = window.innerWidth < 768;
+    const iframeId = isMobile ? 's-windy-iframe' : 'windy-iframe';
+    const btnSelector = isMobile ? '#sp-weather .r-btn' : '#p-weather .r-btn';
+    const iframe = document.getElementById(iframeId);
+    if (iframe && activeCourse && activeCourse.lat) {
+      iframe.src = '';
+      setTimeout(function() {
+        iframe.src = windyUrl(activeCourse.lat, activeCourse.lng, 'rain');
+      }, 200);
+      document.querySelectorAll(btnSelector).forEach(b => b.classList.remove('on'));
+      const rainBtn = document.querySelector(btnSelector + ':nth-child(2)');
+      if (rainBtn) rainBtn.classList.add('on');
+    }
+  }, 500);
 }
 
 async function fillDetail(c) {
