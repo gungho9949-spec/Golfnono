@@ -413,10 +413,10 @@ header {
 
 <!-- 모바일 바텀시트 -->
 <div id="sheet">
-  <div style="position:sticky;top:0;z-index:20;background:#fff;border-radius:22px 22px 0 0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid #f3f4f6;">
-    <button onclick="closeSheet();goHome();" style="background:#f3f4f6;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;">← 지도로</button>
+  <div style="position:sticky;top:0;z-index:50;background:#fff;border-radius:22px 22px 0 0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid #f3f4f6;">
+    <button onclick="closeSheet();goHome();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;">🏠</button>
     <div style="width:40px;height:4px;background:#d1d5db;border-radius:2px;"></div>
-    <button onclick="closeSheet();" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;font-size:15px;color:#6b7280;cursor:pointer;">✕</button>
+    <button onclick="closeSheet();" style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;font-size:15px;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
   </div>
 
   <div class="d-head" style="margin-top:8px;">
@@ -759,8 +759,10 @@ async function select(c, marker) {
   const course = { ...c, weather };
   activeCourse = course;
   if (window.innerWidth < 768) {
+    const sh = document.getElementById('sheet');
     fillSheet(course);
-    document.getElementById('sheet').classList.add('open');
+    sh.scrollTop = 0;
+    sh.classList.add('open');
   } else {
     fillDetail(course);
   }
@@ -1073,8 +1075,10 @@ function goHome() {
             const course = { ...c, weather };
             activeCourse = course;
             if (window.innerWidth < 768) {
+              const sh2 = document.getElementById('sheet');
               fillSheet(course);
-              document.getElementById('sheet').classList.add('open');
+              sh2.scrollTop = 0;
+              sh2.classList.add('open');
             } else {
               fillDetail(course);
             }
