@@ -714,6 +714,9 @@ async function select(c, marker) {
   } else {
     fillDetail(course);
   }
+  // 맛집 탭 자동 로드
+  const foodListId = window.innerWidth < 768 ? 's-food-list' : 'food-list';
+  loadFood(foodListId, course);
   setTimeout(function() {
     const isMobile = window.innerWidth < 768;
     const iframeId = isMobile ? 's-windy-iframe' : 'windy-iframe';
@@ -1104,73 +1107,67 @@ function fillWeather(p, c) {
   set(p+'-vis', '시야 ' + w.vis);
 }
 
-async function fetchRestaurants(c) {
+async function fetchRestaurants(lat, lng) {
+  const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=3000&sort=popularity&size=10`;
   try {
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 5000);
-    const res = await fetch(
-      `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${c.lng}&y=${c.lat}&radius=5000&sort=rating`,
-      { headers: { 'Authorization': `KakaoAK ${KAKAO_REST_KEY}` }, signal: ctrl.signal }
-    );
-    if (!res.ok) throw new Error();
+    const res = await fetch(url, {
+      headers: { Authorization: 'KakaoAK 85715def05ece125da02d43e2e6fa85e' }
+    });
     const data = await res.json();
-    const places = (data.documents || []).slice(0, 3);
-    if (!places.length) throw new Error();
-    return places.map((p, i) => ({
-      rank: i + 1,
-      name: p.place_name,
-      cat: p.category_name.split(' > ').pop(),
-      dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
-      emoji: '🍽️',
-      badges: [p.road_address_name || p.address_name].filter(Boolean),
-      placeUrl: p.place_url,
-      lat: parseFloat(p.y),
-      lng: parseFloat(p.x),
-    }));
-  } catch {
-    return null;
+    return data.documents || [];
+  } catch(e) {
+    console.error('맛집 API 오류', e);
+    return [];
   }
 }
 
-function renderFoodCard(r, c, isApi) {
-  const pos = foodPositions[r.rank] || {};
-  const kakaoDirUrl = pos.lat
-    ? `https://map.kakao.com/link/to/${encodeURIComponent(r.name)},${pos.lat.toFixed(6)},${pos.lng.toFixed(6)}`
-    : `https://map.kakao.com/?q=${encodeURIComponent(r.name + ' ' + c.region)}`;
-  const infoBtn = (isApi && r.placeUrl)
-    ? `<button class="kakao-place-btn" onclick="event.stopPropagation();window.open('${r.placeUrl}','_blank')">📍 카카오플레이스 식당정보</button>`
-    : `<button class="naver-info-btn" onclick="event.stopPropagation();window.open('https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + c.region + ' 맛집')}','_blank')">🔍 네이버에서 식당 정보 보기</button>`;
-  const badgesHtml = (r.badges || []).map(b => `<span class="badge">${b}</span>`).join('');
+function renderFoodCardFromApi(p, idx) {
+  const cat = p.category_name ? p.category_name.split(' > ').pop() : '';
+  const dist = p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm';
+  const lat = parseFloat(p.y), lng = parseFloat(p.x);
+  const dirUrl = `https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${lat.toFixed(6)},${lng.toFixed(6)}`;
+  const placeBtn = p.place_url
+    ? `<button class="kakao-place-btn" onclick="event.stopPropagation();window.open('${p.place_url}','_blank')">📍 카카오플레이스</button>`
+    : '';
+  const phoneHtml = p.phone ? `<div class="food-meta" style="margin-top:2px;">📞 ${p.phone}</div>` : '';
   return `
-  <div class="food-card" data-rank="${r.rank}" onclick="cardClick(${r.rank})">
+  <div class="food-card">
     <div class="food-top">
-      <div class="rank">${r.rank}</div>
+      <div class="rank">${idx + 1}</div>
       <div class="food-info">
-        <div class="food-name">${r.emoji || '🍽️'} ${r.name}</div>
-        <div class="food-meta">${r.cat} · ${r.dist}</div>
+        <div class="food-name">🍽️ ${p.place_name}</div>
+        <div class="food-meta">${cat} · ${dist}</div>
+        ${phoneHtml}
       </div>
-      ${r.price ? `<div class="food-price">${r.price}</div>` : ''}
     </div>
-    ${badgesHtml ? `<div class="badges">${badgesHtml}</div>` : ''}
     <div class="food-btns">
-      ${infoBtn}
-      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${kakaoDirUrl}','_blank')">🗺️ 카카오맵에서 길찾기</button>
+      ${placeBtn}
+      <button class="kakao-dir-btn" onclick="event.stopPropagation();window.open('${dirUrl}','_blank')">🗺️ 카카오맵 길찾기</button>
     </div>
   </div>`;
 }
 
 async function loadFood(listId, c) {
   const el = document.getElementById(listId);
+  if (!el) return;
   el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
-  const apiResults = await fetchRestaurants(c);
-  const isApi = !!apiResults;
-  const restaurants = apiResults || c.restaurants;
+  const places = await fetchRestaurants(c.lat, c.lng);
   clearFoodOverlays();
   showRadiusCircle(c);
-  addFoodMarkers(c, restaurants);
-  el.innerHTML = restaurants.map(r => renderFoodCard(r, c, isApi)).join('');
-  const src = isApi ? '카카오 로컬 API' : '하드코딩 데이터 (폴백)';
-  el.insertAdjacentHTML('beforeend', `<p class="food-note">${src}</p>`);
+  if (!places.length) {
+    el.innerHTML = '<p class="food-loading">주변 맛집 정보를 찾을 수 없습니다</p>';
+    return;
+  }
+  const apiPlaces = places.map((p, i) => ({
+    rank: i + 1, name: p.place_name,
+    cat: p.category_name.split(' > ').pop(),
+    dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
+    emoji: '🍽️', badges: [], placeUrl: p.place_url,
+    lat: parseFloat(p.y), lng: parseFloat(p.x),
+  }));
+  addFoodMarkers(c, apiPlaces);
+  el.innerHTML = places.map((p, i) => renderFoodCardFromApi(p, i)).join('');
+  el.insertAdjacentHTML('beforeend', '<p class="food-note">카카오 로컬 API</p>');
 }
 
 function tab(id) {
