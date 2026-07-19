@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golfnono 골프노노</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e&libraries=clusterer"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script src="courses.js"></script>
 <style>
@@ -312,11 +312,14 @@ header {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: #fff; border-radius: 20px 20px 0 0;
     transform: translateY(100%); transition: transform .3s cubic-bezier(.32,.72,0,1);
-    z-index: 1000; max-height: 90vh; overflow-y: auto;
+    z-index: 1000; height: 85vh; max-height: 85vh; overflow: hidden;
     box-shadow: 0 -4px 24px rgba(0,0,0,.12);
     padding-bottom: env(safe-area-inset-bottom);
+    display: flex; flex-direction: column;
   }
   #sheet.open { transform: translateY(0); }
+  #sheet .panel { flex: 1; overflow-y: auto; min-height: 0; }
+  #sheet .panel.on { display: block; }
   .sheet-handle {
     width: 44px; height: 5px; background: #d1d5db; border-radius: 3px;
     margin: 12px auto 4px; cursor: grab;
@@ -711,6 +714,7 @@ async function fetchWeather(c) {
 let foodOverlays = [];
 let foodPositions = {};
 let foodRadiusCircle = null;
+let foodClusterer = null;
 const FOOD_ANGLES = [50, 160, 280];
 let activeCourse = null;
 
@@ -723,7 +727,8 @@ function getRestaurantPos(course, r) {
   };
 }
 function clearFoodOverlays() {
-  foodOverlays.forEach(o => o.setMap(null));
+  if (foodClusterer) { foodClusterer.clear(); foodClusterer.setMap(null); foodClusterer = null; }
+  foodOverlays.forEach(o => { if (o.setMap) o.setMap(null); });
   foodOverlays = []; foodPositions = {};
   if (foodRadiusCircle) { foodRadiusCircle.setMap(null); foodRadiusCircle = null; }
 }
@@ -742,22 +747,47 @@ function showRadiusCircle(course) {
   foodRadiusCircle.setMap(map);
 }
 const CIRCLE_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+function makeFoodMarkerImage(num) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#16a34a" stroke="#fff" stroke-width="2"/><text x="16" y="21" text-anchor="middle" font-size="14" font-weight="700" fill="#fff" font-family="Arial,sans-serif">${num}</text></svg>`;
+  const src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  return new kakao.maps.MarkerImage(src, new kakao.maps.Size(32, 32), { offset: new kakao.maps.Point(16, 16) });
+}
 function addFoodMarkers(course, restaurants) {
   foodPositions = {};
   const items = restaurants || [];
+  const markers = [];
   items.forEach((r, i) => {
     const pos = (r.lat && r.lng) ? { lat: r.lat, lng: r.lng } : null;
     if (!pos) return;
     foodPositions[r.rank] = pos;
-    const el = document.createElement('div');
-    el.innerHTML = `<div style="width:30px;height:30px;background:#16a34a;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700;cursor:pointer;">${CIRCLE_NUMS[i] || (i+1)}</div>`;
-    el.onclick = () => highlightFoodCard(r.rank);
-    const overlay = new kakao.maps.CustomOverlay({
+    const marker = new kakao.maps.Marker({
       position: new kakao.maps.LatLng(pos.lat, pos.lng),
-      content: el, yAnchor: 0.5, xAnchor: 0.5
+      image: makeFoodMarkerImage(i + 1),
+      title: r.name,
     });
-    overlay.setMap(map);
-    foodOverlays.push(overlay);
+    kakao.maps.event.addListener(marker, 'click', () => highlightFoodCard(r.rank));
+    foodOverlays.push(marker);
+    markers.push(marker);
+  });
+  foodClusterer = new kakao.maps.MarkerClusterer({
+    map,
+    markers,
+    gridSize: 60,
+    averageCenter: true,
+    minLevel: 4,
+    disableClickZoom: false,
+    styles: [{
+      width: '44px', height: '44px',
+      background: '#16a34a',
+      borderRadius: '50%',
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: '15px',
+      lineHeight: '44px',
+      textAlign: 'center',
+      border: '2px solid #fff',
+      boxShadow: '0 2px 8px rgba(0,0,0,.3)',
+    }],
   });
 }
 function highlightFoodCard(rank) {
@@ -1215,24 +1245,29 @@ async function fetchRestaurants(lat, lng) {
 }
 
 function renderFoodCardFromApi(p, idx) {
+  const rank = idx + 1;
   const cat = p.category_name ? p.category_name.split(' > ').pop() : '';
   const dist = p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm';
   const lat = parseFloat(p.y), lng = parseFloat(p.x);
-  const dirUrl = `https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${lat.toFixed(6)},${lng.toFixed(6)}`;
-  const phoneHtml = p.phone ? `<div style="font-size:12px;color:#6b7280;">${p.phone}</div>` : '';
-  const placeLink = p.place_url
-    ? `<a href="${p.place_url}" target="_blank" style="font-size:12px;padding:4px 10px;border-radius:12px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
+  const nameEnc = encodeURIComponent(p.place_name);
+  const naverFallback = `https://map.naver.com/p/search/${nameEnc}`;
+  const phoneHtml = p.phone ? `<a href="tel:${p.phone}" style="font-size:12px;color:#16a34a;text-decoration:none;">📞 ${p.phone}</a>` : '';
+  const placeBtn = p.place_url
+    ? `<a href="${p.place_url}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
     : '';
   return `
-  <div style="display:flex;gap:12px;padding:12px;border-bottom:1px solid #f0f0f0;align-items:flex-start;">
-    <div style="min-width:28px;height:28px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${idx + 1}</div>
-    <div style="flex:1;min-width:0;">
-      <div style="font-weight:700;font-size:14px;">${p.place_name}</div>
-      <div style="font-size:12px;color:#6b7280;">${cat} · ${dist}</div>
-      ${phoneHtml}
-      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
-        ${placeLink}
-        <a href="${dirUrl}" target="_blank" style="font-size:12px;padding:4px 10px;border-radius:12px;background:#fee2e2;color:#dc2626;text-decoration:none;">길찾기</a>
+  <div class="food-card" data-rank="${rank}" onclick="cardClick(${rank})">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${rank}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px;">${p.place_name}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${cat}${cat && dist ? ' · ' : ''}${dist}</div>
+        ${phoneHtml ? `<div style="margin-bottom:6px;">${phoneHtml}</div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${placeBtn}
+          <a href="tmap://route?goalname=${nameEnc}&goalx=${lng}&goaly=${lat}" onclick="setTimeout(()=>window.open('https://tmap.life/','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#e0f2fe;color:#0369a1;text-decoration:none;">TMAP</a>
+          <a href="nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${nameEnc}&appname=golfnono" onclick="setTimeout(()=>window.open('${naverFallback}','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#dcfce7;color:#15803d;text-decoration:none;">네이버</a>
+        </div>
       </div>
     </div>
   </div>`;
@@ -1243,7 +1278,6 @@ async function loadFood(listId, c) {
   if (!el) return;
   el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
   const places = await fetchRestaurants(c.lat, c.lng);
-  console.log('[loadFood]', listId, 'places:', places.length, places);
   clearFoodOverlays();
   showRadiusCircle(c);
   if (!places.length) {
@@ -1431,7 +1465,7 @@ async function loadItsCctv(course, videoId, listId, badgeId, countId, wrapId, ov
   const list = await fetchItsCctv(course.lat, course.lng);
 
   if (!list.length) {
-    if (listEl) listEl.innerHTML = '<p class="food-loading">주변에 CCTV가 없습니다</p>';
+    if (listEl) listEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:8px;"><span style="font-size:36px;">📹</span><p style="font-size:14px;color:#6b7280;margin:0;">주변 5km 이내 CCTV가 없습니다</p></div>';
     return;
   }
 
