@@ -21,6 +21,18 @@ header {
   height: 56px; background: #fff; border-bottom: 1px solid #e5e7eb;
   display: flex; align-items: center; padding: 0 20px; gap: 10px;
   flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  overflow: hidden; transition: height .3s ease, opacity .3s ease, box-shadow .3s ease;
+}
+#filter-bar {
+  overflow: hidden; transition: height .3s ease, opacity .3s ease, padding .3s ease;
+}
+.food-hidden {
+  height: 0 !important;
+  opacity: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 .logo-icon { font-size: 24px; }
 .logo-wrap { cursor: pointer; display: flex; align-items: center; gap: 10px; }
@@ -1292,8 +1304,45 @@ async function loadFood(listId, c) {
     lat: parseFloat(p.y), lng: parseFloat(p.x),
   }));
   addFoodMarkers(c, apiPlaces);
+  fitMapToRestaurants(c, places);
   el.innerHTML = places.map((p, i) => renderFoodCardFromApi(p, i)).join('');
   el.insertAdjacentHTML('beforeend', '<p class="food-note">카카오 로컬 API</p>');
+}
+
+function setFoodMode(on) {
+  const isMobile = window.innerWidth < 768;
+  if (!isMobile) return;
+  const header = document.querySelector('header');
+  const filterBar = document.getElementById('filter-bar');
+  if (!header || !filterBar) return;
+  if (on) {
+    const fbH = filterBar.offsetHeight;
+    if (fbH > 0) filterBar.style.height = fbH + 'px';
+    filterBar.offsetHeight; // force reflow
+    header.classList.add('food-hidden');
+    filterBar.classList.add('food-hidden');
+  } else {
+    header.classList.remove('food-hidden');
+    filterBar.classList.remove('food-hidden');
+    filterBar.style.height = '';
+  }
+  setTimeout(() => { if (map) map.relayout(); }, 320);
+}
+
+function fitMapToRestaurants(course, places) {
+  if (!places || !places.length) {
+    map.setCenter(new kakao.maps.LatLng(course.lat, course.lng));
+    map.setLevel(8);
+    return;
+  }
+  const bounds = new kakao.maps.LatLngBounds();
+  bounds.extend(new kakao.maps.LatLng(course.lat, course.lng));
+  places.forEach(p => {
+    const lat = parseFloat(p.y), lng = parseFloat(p.x);
+    if (!isNaN(lat) && !isNaN(lng)) bounds.extend(new kakao.maps.LatLng(lat, lng));
+  });
+  map.setBounds(bounds, 50, 50, 50, 50);
+  if (map.getLevel() < 4) map.setLevel(4);
 }
 
 function tab(id) {
@@ -1303,8 +1352,6 @@ function tab(id) {
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
-    map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
-    map.setLevel(9);
     loadFood('food-list', activeCourse);
   } else if (id === 'cctv' && activeCourse) {
     clearFoodOverlays();
@@ -1318,13 +1365,13 @@ function tab(id) {
 }
 function stab(id) {
   if (id !== 'cctv') destroyItsCctv('s-its-cctv-video');
+  if (id !== 'food') setFoodMode(false);
   ['weather','food','cctv','info'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
   if (id === 'food' && activeCourse) {
-    map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
-    map.setLevel(9);
+    setFoodMode(true);
     loadFood('s-food-list', activeCourse);
   } else if (id === 'cctv' && activeCourse) {
     clearFoodOverlays();
@@ -1375,6 +1422,7 @@ async function loadPhoto(listId, c) {
     </div>`;
 }
 function closeSheet() {
+  setFoodMode(false);
   const sheet = document.getElementById('sheet');
   sheet.style.transform = '';
   sheet.classList.remove('open');
