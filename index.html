@@ -213,6 +213,21 @@ header {
 @keyframes spin { to { transform: rotate(360deg); } }
 .cctv-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
 
+/* ITS CCTV 탭 */
+.its-cctv-badge { display:flex; align-items:center; gap:6px; padding:8px 14px; background:#f0fdf4; border-radius:10px; margin-bottom:10px; font-size:13px; color:#15803d; font-weight:600; }
+.its-cctv-badge span { color:#6b7280; font-weight:400; }
+.its-cctv-video-wrap { position:relative; width:100%; background:#111; border-radius:10px; overflow:hidden; margin-bottom:10px; }
+.its-cctv-video-wrap video { width:100%; height:180px; display:block; object-fit:cover; }
+.its-cctv-overlay { position:absolute; inset:0; background:rgba(0,0,0,.65); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:#fff; font-size:13px; }
+.its-cctv-overlay.hidden { display:none; }
+.its-cctv-title { font-size:12px; color:#fff; font-weight:600; padding:4px 8px; background:rgba(0,0,0,.55); position:absolute; bottom:6px; left:6px; border-radius:6px; }
+.its-cctv-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1.5px solid #e5e7eb; border-radius:10px; margin-bottom:7px; cursor:pointer; background:#fff; transition:border-color .15s, background .15s; }
+.its-cctv-card:hover, .its-cctv-card.active { border-color:#22c55e; background:#f0fdf4; }
+.its-cctv-card-icon { font-size:22px; flex-shrink:0; }
+.its-cctv-card-info { flex:1; min-width:0; }
+.its-cctv-card-name { font-size:13px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.its-cctv-card-dist { font-size:11px; color:#6b7280; margin-top:2px; }
+
 /* 맛집 */
 .food-card {
   background: #fff; border: 1.5px solid #e5e7eb;
@@ -410,6 +425,7 @@ header {
       <div class="tabs">
         <button class="tab on" onclick="tab('weather')" id="t-weather">🌤 날씨</button>
         <button class="tab" onclick="tab('food')" id="t-food">🍽️ 맛집</button>
+        <button class="tab" onclick="tab('cctv')" id="t-cctv">📹 CCTV</button>
         <button class="tab" onclick="tab('info')" id="t-info">ℹ️ 정보</button>
       </div>
 
@@ -450,6 +466,19 @@ header {
         <p class="food-note">T-map · 카드 빅데이터 기반</p>
       </div>
 
+      <div class="panel" id="p-cctv">
+        <div id="its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="its-cctv-count">0개 발견</span></div>
+        <div class="its-cctv-video-wrap" id="its-cctv-wrap" style="display:none;">
+          <video id="its-cctv-video" muted playsinline></video>
+          <div class="its-cctv-overlay" id="its-cctv-overlay">
+            <div class="cctv-spinner"></div>
+            <span>스트리밍 연결 중...</span>
+          </div>
+          <div class="its-cctv-title" id="its-cctv-playing-name"></div>
+        </div>
+        <div id="its-cctv-list"></div>
+      </div>
+
       <div class="panel" id="p-info">
         <div id="info-list"></div>
       </div>
@@ -485,6 +514,7 @@ header {
   <div class="tabs">
     <button class="tab on" onclick="stab('weather')" id="st-weather">🌤 날씨</button>
     <button class="tab" onclick="stab('food')" id="st-food">🍽️ 맛집</button>
+    <button class="tab" onclick="stab('cctv')" id="st-cctv">📹 CCTV</button>
     <button class="tab" onclick="stab('info')" id="st-info">ℹ️ 정보</button>
   </div>
 
@@ -523,6 +553,19 @@ header {
   <div class="panel" id="sp-food">
     <div id="s-food-list"></div>
     <p class="food-note">T-map · 카드 빅데이터 기반</p>
+  </div>
+
+  <div class="panel" id="sp-cctv">
+    <div id="s-its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="s-its-cctv-count">0개 발견</span></div>
+    <div class="its-cctv-video-wrap" id="s-its-cctv-wrap" style="display:none;">
+      <video id="s-its-cctv-video" muted playsinline></video>
+      <div class="its-cctv-overlay" id="s-its-cctv-overlay">
+        <div class="cctv-spinner"></div>
+        <span>스트리밍 연결 중...</span>
+      </div>
+      <div class="its-cctv-title" id="s-its-cctv-playing-name"></div>
+    </div>
+    <div id="s-its-cctv-list"></div>
   </div>
 
   <div class="panel" id="sp-info">
@@ -1235,7 +1278,8 @@ async function loadFood(listId, c) {
 }
 
 function tab(id) {
-  ['weather','food','info'].forEach(t => {
+  if (id !== 'cctv') destroyItsCctv('its-cctv-video');
+  ['weather','food','cctv','info'].forEach(t => {
     document.getElementById('t-'+t).classList.toggle('on', t===id);
     document.getElementById('p-'+t).classList.toggle('on', t===id);
   });
@@ -1243,6 +1287,9 @@ function tab(id) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
     map.setLevel(9);
     loadFood('food-list', activeCourse);
+  } else if (id === 'cctv' && activeCourse) {
+    clearFoodOverlays();
+    loadItsCctv(activeCourse, 'its-cctv-video', 'its-cctv-list', 'its-cctv-badge', 'its-cctv-count', 'its-cctv-wrap', 'its-cctv-overlay', 'its-cctv-playing-name');
   } else if (id === 'info' && activeCourse) {
     clearFoodOverlays();
     loadInfo('info-list', activeCourse);
@@ -1251,7 +1298,8 @@ function tab(id) {
   }
 }
 function stab(id) {
-  ['weather','food','info'].forEach(t => {
+  if (id !== 'cctv') destroyItsCctv('s-its-cctv-video');
+  ['weather','food','cctv','info'].forEach(t => {
     document.getElementById('st-'+t).classList.toggle('on', t===id);
     document.getElementById('sp-'+t).classList.toggle('on', t===id);
   });
@@ -1259,6 +1307,9 @@ function stab(id) {
     map.setCenter(new kakao.maps.LatLng(activeCourse.lat, activeCourse.lng));
     map.setLevel(9);
     loadFood('s-food-list', activeCourse);
+  } else if (id === 'cctv' && activeCourse) {
+    clearFoodOverlays();
+    loadItsCctv(activeCourse, 's-its-cctv-video', 's-its-cctv-list', 's-its-cctv-badge', 's-its-cctv-count', 's-its-cctv-wrap', 's-its-cctv-overlay', 's-its-cctv-playing-name');
   } else if (id === 'info' && activeCourse) {
     clearFoodOverlays();
     loadInfo('s-info-list', activeCourse);
@@ -1311,6 +1362,119 @@ function closeSheet() {
   const fab = document.getElementById('home-fab');
   if (fab) fab.style.display = 'none';
   document.querySelectorAll('.locate-btn').forEach(b => b.style.display = 'flex');
+}
+
+/* ── ITS CCTV 탭 ── */
+const itsCctvCache = {};
+const ITS_CACHE_TTL = 5 * 60 * 1000;
+
+function getBoundingBox(lat, lng, radiusKm) {
+  const latDelta = radiusKm / 111;
+  const lngDelta = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
+  return { minY: lat - latDelta, maxY: lat + latDelta, minX: lng - lngDelta, maxX: lng + lngDelta };
+}
+
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function fetchItsCctv(lat, lng) {
+  const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  const cached = itsCctvCache[key];
+  if (cached && Date.now() - cached.ts < ITS_CACHE_TTL) return cached.list;
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(`/api/its-cctv?lat=${lat}&lng=${lng}`, { signal: ctrl.signal });
+    const data = await res.json();
+    const raw = data.list || [];
+    const list = raw.map(c => {
+      const clat = parseFloat(c.coordy || c.latitude || 0);
+      const clng = parseFloat(c.coordx || c.longitude || 0);
+      const url = c.cctvurl || c.streamurl || c.filepath || '';
+      if (!clat || !clng || !url) return null;
+      return { name: c.cctvname || c.name || 'CCTV', url, lat: clat, lng: clng,
+        dist: haversineDistance(lat, lng, clat, clng) };
+    }).filter(Boolean).sort((a, b) => a.dist - b.dist);
+    itsCctvCache[key] = { list, ts: Date.now() };
+    return list;
+  } catch { return []; }
+}
+
+let itsHlsInstances = {};
+function destroyItsCctv(videoId) {
+  if (itsHlsInstances[videoId]) { itsHlsInstances[videoId].destroy(); delete itsHlsInstances[videoId]; }
+  const v = document.getElementById(videoId);
+  if (v) { v.pause(); v.src = ''; }
+}
+
+function playItsCctv(url, videoId, overlayId, nameEl, name) {
+  const video = document.getElementById(videoId);
+  const overlay = document.getElementById(overlayId);
+  const nEl = document.getElementById(nameEl);
+  if (!video) return;
+  destroyItsCctv(videoId);
+  if (nEl) nEl.textContent = name;
+  if (overlay) overlay.classList.remove('hidden');
+  if (Hls.isSupported()) {
+    const hls = new Hls({ lowLatencyMode: true });
+    itsHlsInstances[videoId] = hls;
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(()=>{}); if (overlay) overlay.classList.add('hidden'); });
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal && overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = '스트림 오류'; } });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.play().catch(()=>{});
+    if (overlay) overlay.classList.add('hidden');
+  } else {
+    if (overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = 'HLS 미지원'; }
+  }
+}
+
+async function loadItsCctv(course, videoId, listId, badgeId, countId, wrapId, overlayId, nameElId) {
+  const listEl = document.getElementById(listId);
+  const badge = document.getElementById(badgeId);
+  const countEl = document.getElementById(countId);
+  const wrap = document.getElementById(wrapId);
+  if (listEl) listEl.innerHTML = '<p class="food-loading">📡 주변 CCTV 정보를 불러오는 중...</p>';
+  if (badge) badge.style.display = 'none';
+  if (wrap) wrap.style.display = 'none';
+
+  const list = await fetchItsCctv(course.lat, course.lng);
+
+  if (!list.length) {
+    if (listEl) listEl.innerHTML = '<p class="food-loading">주변에 CCTV가 없습니다</p>';
+    return;
+  }
+
+  if (badge) badge.style.display = 'flex';
+  if (countEl) countEl.textContent = `${list.length}개 발견`;
+  if (wrap) wrap.style.display = 'block';
+
+  // 가장 가까운 CCTV 자동 재생
+  playItsCctv(list[0].url, videoId, overlayId, nameElId, list[0].name);
+
+  // 카드 리스트 렌더링
+  if (listEl) {
+    listEl.innerHTML = list.map((c, i) => `
+      <div class="its-cctv-card${i===0?' active':''}" onclick="selectItsCctv(this,'${encodeURIComponent(c.url)}','${videoId}','${overlayId}','${nameElId}','${encodeURIComponent(c.name)}','${listId}')">
+        <div class="its-cctv-card-icon">📹</div>
+        <div class="its-cctv-card-info">
+          <div class="its-cctv-card-name">${c.name}</div>
+          <div class="its-cctv-card-dist">${c.dist < 1 ? (c.dist*1000).toFixed(0)+'m' : c.dist.toFixed(1)+'km'} 거리</div>
+        </div>
+        <div style="font-size:18px;color:#22c55e;">▶</div>
+      </div>`).join('');
+  }
+}
+
+function selectItsCctv(card, urlEnc, videoId, overlayId, nameElId, nameEnc, listId) {
+  document.querySelectorAll(`#${listId} .its-cctv-card`).forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  playItsCctv(decodeURIComponent(urlEnc), videoId, overlayId, nameElId, decodeURIComponent(nameEnc));
 }
 
 /* ── CCTV 재시도 ── */
