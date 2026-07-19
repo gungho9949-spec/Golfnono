@@ -9,6 +9,7 @@
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e&libraries=clusterer"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script src="courses.js"></script>
+<script src="curated-restaurants.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { overflow: hidden; scrollbar-width: none; }
@@ -1256,9 +1257,57 @@ async function fetchRestaurants(lat, lng) {
   }
 }
 
+function getShortCategory(categoryName) {
+  if (!categoryName) return '';
+  const parts = categoryName.split('>').map(s => s.trim()).filter(Boolean);
+  return parts[parts.length - 1] || parts[parts.length - 2] || '';
+}
+
+function renderCuratedCard(r, idx) {
+  const rank = idx + 1;
+  const ratingHtml = r.naverRating
+    ? `<span style="font-size:12px;color:#f59e0b;font-weight:600;">★ ${r.naverRating}</span>${r.reviewCount ? `<span style="font-size:11px;color:#9ca3af;"> (${r.reviewCount.toLocaleString()})</span>` : ''}`
+    : '';
+  const phoneHtml = r.phone
+    ? `<a href="tel:${r.phone}" style="font-size:12px;color:#16a34a;text-decoration:none;">📞 ${r.phone}</a>`
+    : '';
+  const noteHtml = r.note
+    ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;font-style:italic;">💬 ${r.note}</div>`
+    : '';
+  const catTag = r.category
+    ? `<span style="font-size:11px;padding:2px 7px;border-radius:8px;background:#f0fdf4;color:#15803d;font-weight:600;">${r.category}</span>`
+    : '';
+  const linkBtn = r.naverUrl
+    ? `<a href="${r.naverUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#e8f5e9;color:#1b5e20;text-decoration:none;font-weight:600;">네이버 상세</a>`
+    : '';
+  const kakaoBtn = r.kakaoUrl
+    ? `<a href="${r.kakaoUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
+    : '';
+  return `
+  <div class="food-card" style="border-color:#fbbf24;background:linear-gradient(135deg,#fffbeb,#fff);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+      <span style="font-size:11px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #fbbf24;padding:2px 8px;border-radius:8px;">🏆 골프노노 인증</span>
+      ${catTag}
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:#d97706;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${rank}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px;">${r.name}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">${ratingHtml}</div>
+        ${r.address ? `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">📍 ${r.address}</div>` : ''}
+        ${phoneHtml ? `<div style="margin-bottom:6px;">${phoneHtml}</div>` : ''}
+        ${noteHtml}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+          ${linkBtn}${kakaoBtn}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderFoodCardFromApi(p, idx) {
   const rank = idx + 1;
-  const cat = p.category_name ? p.category_name.split(' > ').pop() : '';
+  const cat = getShortCategory(p.category_name);
   const dist = p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm';
   const lat = parseFloat(p.y), lng = parseFloat(p.x);
   const nameEnc = encodeURIComponent(p.place_name);
@@ -1288,6 +1337,20 @@ function renderFoodCardFromApi(p, idx) {
 async function loadFood(listId, c) {
   const el = document.getElementById(listId);
   if (!el) return;
+
+  // 큐레이션 데이터 확인
+  const curated = (typeof curatedRestaurants !== 'undefined' && curatedRestaurants[c.name]) || [];
+  if (curated.length > 0) {
+    clearFoodOverlays();
+    showRadiusCircle(c);
+    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+    map.setLevel(8);
+    el.innerHTML = curated.map((r, i) => renderCuratedCard(r, i)).join('');
+    el.insertAdjacentHTML('beforeend', '<p class="food-note">골프노노 큐레이션</p>');
+    return;
+  }
+
+  // 큐레이션 없으면 카카오 API 실시간 검색
   el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
   const places = await fetchRestaurants(c.lat, c.lng);
   clearFoodOverlays();
@@ -1298,7 +1361,7 @@ async function loadFood(listId, c) {
   }
   const apiPlaces = places.map((p, i) => ({
     rank: i + 1, name: p.place_name,
-    cat: p.category_name.split(' > ').pop(),
+    cat: getShortCategory(p.category_name),
     dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
     emoji: '🍽️', badges: [], placeUrl: p.place_url,
     lat: parseFloat(p.y), lng: parseFloat(p.x),
