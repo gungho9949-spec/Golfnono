@@ -448,17 +448,6 @@ header {
         </div>
         <iframe id="windy-iframe" frameborder="0" style="border-radius:8px;border:none;overflow:hidden;margin-bottom:6px;"></iframe>
         <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
-        <div class="section-label">📹 인근 도로 CCTV 실시간</div>
-        <select class="cctv-select" id="cctv-select"></select>
-        <div class="cctv-player-wrap">
-          <video id="cctv-video" muted playsinline></video>
-          <div class="cctv-overlay" id="cctv-overlay">
-            <div class="cctv-spinner" id="cctv-spinner"></div>
-            <span id="cctv-overlay-msg">CCTV 불러오는 중...</span>
-            <button id="cctv-retry-btn" style="display:none;margin-top:6px;padding:6px 14px;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;" onclick="retryCctv('cctv')">🔄 재시도</button>
-          </div>
-        </div>
-        <div class="cctv-meta" id="cctv-meta"></div>
       </div>
 
       <div class="panel" id="p-food">
@@ -537,17 +526,6 @@ header {
     </div>
     <iframe id="s-windy-iframe" frameborder="0" style="border-radius:8px;border:none;overflow:hidden;margin-bottom:6px;"></iframe>
     <p style="font-size:11px;color:#888;font-style:italic;margin-bottom:14px;">💡 파란색=비 예보 · 화살표=바람 방향 · 진할수록 강함</p>
-    <div class="section-label">📹 인근 도로 CCTV 실시간</div>
-    <select class="cctv-select" id="s-cctv-select"></select>
-    <div class="cctv-player-wrap">
-      <video id="s-cctv-video" muted playsinline></video>
-      <div class="cctv-overlay" id="s-cctv-overlay">
-        <div class="cctv-spinner" id="s-cctv-spinner"></div>
-        <span id="s-cctv-overlay-msg">CCTV 불러오는 중...</span>
-        <button id="s-cctv-retry-btn" style="display:none;margin-top:6px;padding:6px 14px;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;" onclick="retryCctv('s-cctv')">🔄 재시도</button>
-      </div>
-    </div>
-    <div class="cctv-meta" id="s-cctv-meta"></div>
   </div>
 
   <div class="panel" id="sp-food">
@@ -851,7 +829,6 @@ async function fillDetail(c) {
   const card = document.getElementById('golf-index-card');
   if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('windy-iframe', c);
-  loadCctv(c, 'cctv-video', 'cctv-select', 'cctv-overlay', 'cctv-overlay-msg', 'cctv-meta');
   document.querySelectorAll('#p-weather .r-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('#p-weather .r-btn:nth-child(2)').classList.add('on');
   tab('weather');
@@ -883,7 +860,6 @@ async function fillSheet(c) {
   const card = document.getElementById('s-golf-index-card');
   if (card) card.innerHTML = '<div class="golf-index" style="padding:14px;color:#6b7280;font-size:13px;">⏳ 날씨 불러오는 중...</div>';
   fillCctv('s-windy-iframe', c);
-  loadCctv(c, 's-cctv-video', 's-cctv-select', 's-cctv-overlay', 's-cctv-overlay-msg', 's-cctv-meta');
   document.querySelectorAll('#sp-weather .r-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('#sp-weather .r-btn:nth-child(2)').classList.add('on');
   stab('weather');
