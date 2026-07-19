@@ -400,6 +400,7 @@ header {
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button id="fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
+            <button onclick="shareGolfCourse()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;padding:2px;" title="공유">🔗</button>
             <div class="d-temp" id="d-temp"></div>
           </div>
         </div>
@@ -474,6 +475,7 @@ header {
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button id="s-fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
+        <button onclick="shareGolfCourse()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;padding:2px;" title="공유">🔗</button>
         <div class="d-temp" id="s-temp"></div>
       </div>
     </div>
@@ -1337,12 +1339,73 @@ async function loadInfo(listId, c) {
         <div style="font-size:13px;color:#4b5563;margin-bottom:6px;">📍 ${addr}</div>
         ${phone ? `<div style="font-size:13px;color:#4b5563;margin-bottom:6px;">📞 <a href="tel:${phone}" style="color:#16a34a;font-weight:600;">${phone}</a></div>` : ''}
         <div style="font-size:13px;color:#4b5563;margin-bottom:6px;">⛳ ${c.holes ? c.holes+'홀' : '–'} · ${c.type || '–'}</div>
-        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-          <a href="${dirUrl}" target="_blank" style="flex:1;min-width:110px;text-align:center;padding:10px 0;background:#fee2e2;border-radius:10px;color:#dc2626;font-weight:600;font-size:13px;text-decoration:none;">🗺️ 카카오 길찾기</a>
-          ${placeUrl ? `<a href="${placeUrl}" target="_blank" style="flex:1;min-width:110px;text-align:center;padding:10px 0;background:#eff6ff;border-radius:10px;color:#2563eb;font-weight:600;font-size:13px;text-decoration:none;">📍 카카오맵 보기</a>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
+          <button onclick="openNavApp('tmap','${encodeURIComponent(c.name)}',${c.lat},${c.lng})" style="padding:10px 0;background:#0066ff;border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;">🚗 TMAP</button>
+          <button onclick="openNavApp('kakao','${encodeURIComponent(c.name)}',${c.lat},${c.lng})" style="padding:10px 0;background:#fee500;border:none;border-radius:10px;color:#3c1e1e;font-weight:600;font-size:13px;cursor:pointer;">🗺️ 카카오맵</button>
+          <button onclick="openNavApp('naver','${encodeURIComponent(c.name)}',${c.lat},${c.lng})" style="padding:10px 0;background:#03c75a;border:none;border-radius:10px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;">🟢 네이버지도</button>
+          <button onclick="copyAddress('${(addr).replace(/'/g,"\\'")}','${encodeURIComponent(c.name)}')" style="padding:10px 0;background:#f3f4f6;border:none;border-radius:10px;color:#374151;font-weight:600;font-size:13px;cursor:pointer;">📋 주소 복사</button>
         </div>
       </div>
     </div>`;
+}
+
+/* ── 토스트 ── */
+function showToast(msg) {
+  let t = document.getElementById('gn-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'gn-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;z-index:9999;pointer-events:none;transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
+/* ── 네비게이션 앱 연결 ── */
+function openNavApp(app, nameEnc, lat, lng) {
+  const name = decodeURIComponent(nameEnc);
+  let appUrl, fallback;
+  if (app === 'tmap') {
+    appUrl = `tmap://route?goalname=${nameEnc}&goalx=${lng}&goaly=${lat}`;
+    fallback = 'https://tmap.life/';
+  } else if (app === 'kakao') {
+    appUrl = `kakaomap://route?ep=${lat},${lng}&by=CAR`;
+    fallback = `https://map.kakao.com/link/to/${nameEnc},${lat},${lng}`;
+  } else {
+    appUrl = `nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${nameEnc}&appname=golfnono`;
+    fallback = `https://map.naver.com/p/search/${nameEnc}`;
+  }
+  window.location.href = appUrl;
+  setTimeout(() => { window.open(fallback, '_blank'); }, 1500);
+}
+
+/* ── 주소 복사 ── */
+function copyAddress(addr) {
+  navigator.clipboard.writeText(addr)
+    .then(() => showToast('주소가 복사되었습니다'))
+    .catch(() => { showToast('복사에 실패했습니다'); });
+}
+
+/* ── 공유 ── */
+function shareGolfCourse() {
+  if (!activeCourse) return;
+  const c = activeCourse;
+  const shareUrl = `https://golfnono-kr.vercel.app/?course=${encodeURIComponent(c.name)}`;
+  const addr = c.addr || c.region || '';
+  if (navigator.share) {
+    navigator.share({
+      title: `${c.name} - 골프노노`,
+      text: `${c.name} | ${addr} | 골프노노에서 확인하세요`,
+      url: shareUrl
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => showToast('링크가 복사되었습니다'))
+      .catch(() => showToast('공유에 실패했습니다'));
+  }
 }
 
 /* ── 즐겨찾기 ── */
