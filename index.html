@@ -343,11 +343,11 @@ header {
 <div id="filter-bar" style="background:#fff;border-bottom:1px solid #e5e7eb;padding:6px 16px;display:flex;gap:8px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04);">
   <select id="filter-region" onchange="applyFilters()" style="flex:1;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-family:inherit;background:#fff;color:#374151;">
     <option value="">지역 전체</option>
-    <option value="서울">서울/경기</option>
+    <option value="서울/경기">서울/경기</option>
     <option value="강원">강원</option>
-    <option value="충">충청</option>
-    <option value="전">전라</option>
-    <option value="경">경상</option>
+    <option value="충청">충청</option>
+    <option value="전라">전라</option>
+    <option value="경상">경상</option>
     <option value="제주">제주</option>
   </select>
   <select id="filter-holes" onchange="applyFilters()" style="flex:1;padding:6px 8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-family:inherit;background:#fff;color:#374151;">
@@ -1497,6 +1497,16 @@ function showNearby() {
 }
 
 /* ── 필터 ── */
+function getRegionCategory(region) {
+  const r = region || '';
+  if (r.startsWith('서울') || r.startsWith('경기') || r.startsWith('인천')) return '서울/경기';
+  if (r.startsWith('강원')) return '강원';
+  if (r.startsWith('충북') || r.startsWith('충남') || r.startsWith('충청') || r.startsWith('대전') || r.startsWith('세종')) return '충청';
+  if (r.startsWith('전북') || r.startsWith('전남') || r.startsWith('전라') || r.startsWith('광주')) return '전라';
+  if (r.startsWith('경북') || r.startsWith('경남') || r.startsWith('경상') || r.startsWith('부산') || r.startsWith('대구') || r.startsWith('울산')) return '경상';
+  if (r.startsWith('제주')) return '제주';
+  return '기타';
+}
 function applyFilters() {
   const region = document.getElementById('filter-region')?.value || '';
   const holes = document.getElementById('filter-holes')?.value || '';
@@ -1504,7 +1514,7 @@ function applyFilters() {
   let count = 0;
   COURSES.forEach(c => {
     if (!c.marker) return;
-    const regionMatch = !region || c.region.includes(region);
+    const regionMatch = !region || getRegionCategory(c.region) === region;
     const holesMatch = !holes || (holes === '36' ? c.holes >= 36 : c.holes == holes);
     const typeMatch = !type || (c.type || '').includes(type);
     const show = regionMatch && holesMatch && typeMatch;
