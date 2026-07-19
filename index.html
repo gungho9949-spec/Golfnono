@@ -45,7 +45,7 @@ header {
 .search-icon { font-size: 14px; color: #9ca3af; flex-shrink: 0; }
 .search-input {
   border: none; background: transparent; outline: none;
-  font-size: 13px; font-family: inherit; color: #1a1a1a;
+  font-size: 16px; font-family: inherit; color: #1a1a1a;
   width: 200px; height: 34px;
 }
 .search-input::placeholder { color: #9ca3af; }
@@ -1111,7 +1111,9 @@ function goHome() {
 function selectCourse(course) {
   const results = document.getElementById('search-results');
   if (results) results.style.display = 'none';
-  document.getElementById('search-input').value = '';
+  const searchInput = document.getElementById('search-input');
+  searchInput.value = '';
+  searchInput.blur();
   document.getElementById('search-dropdown').classList.remove('open');
   if (!course.lat || course.lat === 0) return;
   const latlng = new kakao.maps.LatLng(course.lat, course.lng);
@@ -1174,8 +1176,15 @@ function selectCourse(course) {
   document.addEventListener('click', e => {
     if (!document.getElementById('search-wrap').contains(e.target)) {
       dropdown.classList.remove('open');
+      input.blur();
     }
   });
+  document.addEventListener('touchend', e => {
+    if (!document.getElementById('search-wrap').contains(e.target)) {
+      dropdown.classList.remove('open');
+      input.blur();
+    }
+  }, { passive: true });
 })();
 
 function fillWeather(p, c) {
