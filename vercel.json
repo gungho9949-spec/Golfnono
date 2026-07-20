@@ -11,5 +11,10 @@
         { "key": "Cache-Control", "value": "s-maxage=86400" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/its-cctv.js": {
+      "regions": ["icn1"]
+    }
+  }
 }
