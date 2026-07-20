@@ -44,6 +44,6 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ list, total: list.length, apiReachable });
   } catch (e) {
-    res.status(200).json({ list: [], total: 0, apiReachable: false });
+    res.status(200).json({ list: [], total: 0, apiReachable: false, _debug: e.message });
   }
 };
