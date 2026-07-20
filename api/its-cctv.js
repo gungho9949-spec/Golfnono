@@ -32,15 +32,20 @@ module.exports = async (req, res) => {
     clearTimeout(timer);
 
     const list = [];
-    for (const r of [resEx, resIts]) {
+    const debug = { ex: null, its: null };
+    for (const [idx, r] of [resEx, resIts].entries()) {
+      const key = idx === 0 ? 'ex' : 'its';
       if (r.status === 'fulfilled') {
         const d = r.value;
+        debug[key] = JSON.stringify(d).substring(0, 400);
         const items = d?.response?.data || d?.data || d?.list || [];
         if (Array.isArray(items)) list.push(...items);
+      } else {
+        debug[key] = 'ERR: ' + r.reason?.message;
       }
     }
 
-    res.status(200).json({ list, total: list.length });
+    res.status(200).json({ list, total: list.length, debug, region: process.env.VERCEL_REGION || 'unknown' });
   } catch (e) {
     res.status(502).json({ error: e.message, list: [] });
   }
