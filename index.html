@@ -1510,9 +1510,7 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// TEST: 브라우저에서 ITS API 직접 호출 (CORS 가능 여부 확인용)
-// 성공 시 클라이언트 direct call 방식으로 정식 전환, 실패 시 서버 프록시로 복귀
-const ITS_DIRECT_KEY = 'c3cc193d5700441996d42d23066c9eb9';
+const ITS_API_KEY = 'c3cc193d5700441996d42d23066c9eb9';
 
 async function fetchItsCctv(lat, lng) {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
@@ -1526,7 +1524,7 @@ async function fetchItsCctv(lat, lng) {
   const maxY = (lat + latDelta).toFixed(6);
   const minX = (lng - lngDelta).toFixed(6);
   const maxX = (lng + lngDelta).toFixed(6);
-  const base = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${ITS_DIRECT_KEY}&cctvType=1&getType=json`
+  const base = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${ITS_API_KEY}&cctvType=1&getType=json`
     + `&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}`;
 
   try {
@@ -1545,9 +1543,6 @@ async function fetchItsCctv(lat, lng) {
         if (Array.isArray(items)) raw.push(...items);
       }
     }
-    console.log('[CCTV direct] apiReachable:', apiReachable, '| raw count:', raw.length, '| ex:', resEx.status, '| its:', resIts.status,
-      resEx.status === 'rejected' ? '| ex err: ' + resEx.reason?.message : '',
-      resIts.status === 'rejected' ? '| its err: ' + resIts.reason?.message : '');
     const list = raw.map(c => {
       const clat = parseFloat(c.coordy || 0);
       const clng = parseFloat(c.coordx || 0);
@@ -1559,8 +1554,7 @@ async function fetchItsCctv(lat, lng) {
     const result = { list, apiReachable };
     itsCctvCache[key] = { ...result, ts: Date.now() };
     return result;
-  } catch (e) {
-    console.log('[CCTV direct] catch:', e.message);
+  } catch {
     return { list: [], apiReachable: false };
   }
 }
