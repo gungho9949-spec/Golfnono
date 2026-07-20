@@ -1513,10 +1513,10 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
 async function fetchItsCctv(lat, lng) {
   const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
   const cached = itsCctvCache[key];
-  if (cached && Date.now() - cached.ts < ITS_CACHE_TTL) return cached.list;
+  if (cached && Date.now() - cached.ts < ITS_CACHE_TTL) return cached;
   try {
     const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 8000);
+    setTimeout(() => ctrl.abort(), 7000);
     const res = await fetch(`/api/its-cctv?lat=${lat}&lng=${lng}`, { signal: ctrl.signal });
     const data = await res.json();
     const raw = data.list || [];
@@ -1528,9 +1528,10 @@ async function fetchItsCctv(lat, lng) {
       return { name: c.cctvname || c.name || 'CCTV', url, lat: clat, lng: clng,
         dist: haversineDistance(lat, lng, clat, clng) };
     }).filter(Boolean).sort((a, b) => a.dist - b.dist);
-    itsCctvCache[key] = { list, ts: Date.now() };
-    return list;
-  } catch { return []; }
+    const result = { list, apiReachable: data.apiReachable !== false };
+    itsCctvCache[key] = { ...result, ts: Date.now() };
+    return result;
+  } catch { return { list: [], apiReachable: false }; }
 }
 
 let itsHlsInstances = {};
@@ -1573,10 +1574,14 @@ async function loadItsCctv(course, videoId, listId, badgeId, countId, wrapId, ov
   if (badge) badge.style.display = 'none';
   if (wrap) wrap.style.display = 'none';
 
-  const list = await fetchItsCctv(course.lat, course.lng);
+  const { list, apiReachable } = await fetchItsCctv(course.lat, course.lng);
 
   if (!list.length) {
-    if (listEl) listEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:8px;"><span style="font-size:36px;">📹</span><p style="font-size:14px;color:#6b7280;margin:0;">주변 5km 이내 CCTV가 없습니다</p></div>';
+    const msg = apiReachable
+      ? '주변 5km 이내 CCTV가 없습니다'
+      : 'CCTV 서비스 연결에 실패했습니다\n잠시 후 다시 시도해 주세요';
+    const icon = apiReachable ? '📹' : '⚠️';
+    if (listEl) listEl.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:8px;"><span style="font-size:36px;">${icon}</span><p style="font-size:14px;color:#6b7280;margin:0;text-align:center;white-space:pre-line;">${msg}</p></div>`;
     return;
   }
 

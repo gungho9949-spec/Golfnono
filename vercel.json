@@ -14,7 +14,7 @@
   ],
   "functions": {
     "api/its-cctv.js": {
-      "regions": ["icn1"]
+      "maxDuration": 10
     }
   }
 }

@@ -19,12 +19,12 @@ module.exports = async (req, res) => {
   const minX = (lngF - lngDelta).toFixed(6);
   const maxX = (lngF + lngDelta).toFixed(6);
 
-  const base = `https://openapi.its.go.kr/api/NCCTVInfo?key=${API_KEY}&ReqType=2`
+  const base = `http://openapi.its.go.kr:8081/api/NCCTVInfo?key=${API_KEY}&ReqType=2`
     + `&MinX=${minX}&MaxX=${maxX}&MinY=${minY}&MaxY=${maxY}&cctvType=1`;
 
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 14000);
+    const timer = setTimeout(() => ctrl.abort(), 5000);
     const [resEx, resIts] = await Promise.allSettled([
       fetch(`${base}&type=ex`, { signal: ctrl.signal }).then(r => r.json()),
       fetch(`${base}&type=its`, { signal: ctrl.signal }).then(r => r.json()),
@@ -32,21 +32,18 @@ module.exports = async (req, res) => {
     clearTimeout(timer);
 
     const list = [];
-    const debug = { ex: null, its: null };
-    for (const [idx, r] of [resEx, resIts].entries()) {
-      const key = idx === 0 ? 'ex' : 'its';
+    let apiReachable = false;
+    for (const r of [resEx, resIts]) {
       if (r.status === 'fulfilled') {
+        apiReachable = true;
         const d = r.value;
-        debug[key] = JSON.stringify(d).substring(0, 400);
         const items = d?.response?.data || d?.data || d?.list || [];
         if (Array.isArray(items)) list.push(...items);
-      } else {
-        debug[key] = 'ERR: ' + r.reason?.message;
       }
     }
 
-    res.status(200).json({ list, total: list.length, debug, region: process.env.VERCEL_REGION || 'unknown' });
+    res.status(200).json({ list, total: list.length, apiReachable });
   } catch (e) {
-    res.status(502).json({ error: e.message, list: [] });
+    res.status(200).json({ list: [], total: 0, apiReachable: false });
   }
 };
