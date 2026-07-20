@@ -42,8 +42,11 @@ module.exports = async (req, res) => {
       }
     }
 
-    res.status(200).json({ list, total: list.length, apiReachable });
+    const _debug = [resEx, resIts].map((r, i) =>
+      r.status === 'rejected' ? `[${i === 0 ? 'ex' : 'its'}] ${r.reason?.message}` : `[${i === 0 ? 'ex' : 'its'}] ok`
+    );
+    res.status(200).json({ list, total: list.length, apiReachable, _debug });
   } catch (e) {
-    res.status(200).json({ list: [], total: 0, apiReachable: false, _debug: e.message });
+    res.status(200).json({ list: [], total: 0, apiReachable: false, _debug: ['catch: ' + e.message] });
   }
 };
