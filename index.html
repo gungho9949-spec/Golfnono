@@ -1973,13 +1973,14 @@ loadTop5();
 <script>
 (function() {
   const overlay = document.getElementById('intro-overlay');
-  if (!localStorage.getItem('golfnono_visited')) {
-    overlay.style.display = 'flex';
-  } else {
+  // ?course= 공유 링크로 접속한 경우 인트로 건너뜀
+  const hasCoursParam = new URLSearchParams(window.location.search).has('course');
+  if (hasCoursParam) {
     overlay.style.display = 'none';
+  } else {
+    overlay.style.display = 'flex';
   }
   document.getElementById('intro-start-btn').addEventListener('click', function() {
-    localStorage.setItem('golfnono_visited', 'true');
     overlay.classList.add('intro-hiding');
     setTimeout(function() { overlay.style.display = 'none'; }, 400);
   });
