@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const timer = setTimeout(() => ctrl.abort(), 5000);
     const [resEx, resIts] = await Promise.allSettled([
       fetch(`${base}&type=ex`, { signal: ctrl.signal }).then(r => r.json()),
       fetch(`${base}&type=its`, { signal: ctrl.signal }).then(r => r.json()),
@@ -42,11 +42,8 @@ module.exports = async (req, res) => {
       }
     }
 
-    const _debug = [resEx, resIts].map((r, i) =>
-      r.status === 'rejected' ? `[${i === 0 ? 'ex' : 'its'}] ${r.reason?.message}` : `[${i === 0 ? 'ex' : 'its'}] ok`
-    );
-    res.status(200).json({ list, total: list.length, apiReachable, _debug });
+    res.status(200).json({ list, total: list.length, apiReachable });
   } catch (e) {
-    res.status(200).json({ list: [], total: 0, apiReachable: false, _debug: ['catch: ' + e.message] });
+    res.status(200).json({ list: [], total: 0, apiReachable: false });
   }
 };
