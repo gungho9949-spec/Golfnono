@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
 
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const timer = setTimeout(() => ctrl.abort(), 14000);
     const [resEx, resIts] = await Promise.allSettled([
       fetch(`${base}&type=ex`, { signal: ctrl.signal }).then(r => r.json()),
       fetch(`${base}&type=its`, { signal: ctrl.signal }).then(r => r.json()),
