@@ -19,8 +19,8 @@ module.exports = async (req, res) => {
   const minX = (lngF - lngDelta).toFixed(6);
   const maxX = (lngF + lngDelta).toFixed(6);
 
-  const base = `http://openapi.its.go.kr:8081/api/NCCTVInfo?key=${API_KEY}&ReqType=2`
-    + `&MinX=${minX}&MaxX=${maxX}&MinY=${minY}&MaxY=${maxY}&cctvType=1`;
+  const base = `https://openapi.its.go.kr:9443/cctvInfo?apiKey=${API_KEY}&cctvType=1&getType=json`
+    + `&minX=${minX}&maxX=${maxX}&minY=${minY}&maxY=${maxY}`;
 
   try {
     const ctrl = new AbortController();
