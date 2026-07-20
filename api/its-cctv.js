@@ -32,15 +32,19 @@ module.exports = async (req, res) => {
     clearTimeout(timer);
 
     const list = [];
+    const debug = [];
     for (const r of [resEx, resIts]) {
       if (r.status === 'fulfilled') {
         const d = r.value;
+        debug.push(JSON.stringify(d).substring(0, 300));
         const items = d?.response?.data || d?.data || d?.list || [];
         if (Array.isArray(items)) list.push(...items);
+      } else {
+        debug.push('rejected: ' + r.reason?.message);
       }
     }
 
-    res.status(200).json({ list, total: list.length });
+    res.status(200).json({ list, total: list.length, debug });
   } catch (e) {
     res.status(502).json({ error: e.message, list: [] });
   }
