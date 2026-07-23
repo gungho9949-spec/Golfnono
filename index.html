@@ -23,7 +23,7 @@ header {
   display: flex; align-items: center; padding: 0 20px; gap: 10px;
   flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
   overflow: visible; transition: height .3s ease, opacity .3s ease, box-shadow .3s ease;
-  position: relative; z-index: 100;
+  position: sticky; top: 0; z-index: 100;
 }
 header.food-hidden { overflow: hidden; }
 #filter-bar {
@@ -86,7 +86,7 @@ header.food-hidden { overflow: hidden; }
 /* 사이드바 */
 #sidebar {
   width: 340px; min-width: 340px; background: #fff;
-  border-right: 1px solid #e5e7eb; overflow-y: auto;
+  border-right: 1px solid #e5e7eb; overflow-y: auto; overscroll-behavior: contain;
   box-shadow: 2px 0 8px rgba(0,0,0,.04);
 }
 #sidebar::-webkit-scrollbar { width: 4px; }
@@ -333,7 +333,7 @@ header.food-hidden { overflow: hidden; }
     display: flex; flex-direction: column;
   }
   #sheet.open { transform: translateY(0); }
-  #sheet .panel { flex: 1; overflow-y: auto; min-height: 0; }
+  #sheet .panel { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
   #sheet .panel.on { display: block; }
   .sheet-handle {
     width: 44px; height: 5px; background: #d1d5db; border-radius: 3px;
@@ -476,7 +476,7 @@ header.food-hidden { overflow: hidden; }
       <div class="panel" id="p-cctv">
         <div id="its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="its-cctv-count">0개 발견</span></div>
         <div class="its-cctv-video-wrap" id="its-cctv-wrap" style="display:none;">
-          <video id="its-cctv-video" muted playsinline></video>
+          <video id="its-cctv-video" muted playsinline tabindex="-1"></video>
           <div class="its-cctv-overlay" id="its-cctv-overlay">
             <div class="cctv-spinner"></div>
             <span>스트리밍 연결 중...</span>
@@ -554,7 +554,7 @@ header.food-hidden { overflow: hidden; }
   <div class="panel" id="sp-cctv">
     <div id="s-its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="s-its-cctv-count">0개 발견</span></div>
     <div class="its-cctv-video-wrap" id="s-its-cctv-wrap" style="display:none;">
-      <video id="s-its-cctv-video" muted playsinline></video>
+      <video id="s-its-cctv-video" muted playsinline tabindex="-1"></video>
       <div class="its-cctv-overlay" id="s-its-cctv-overlay">
         <div class="cctv-spinner"></div>
         <span>스트리밍 연결 중...</span>
@@ -1578,17 +1578,38 @@ function playItsCctv(url, videoId, overlayId, nameEl, name) {
   if (url.startsWith('http://')) url = url.replace('http://', 'https://');
   if (nEl) nEl.textContent = name;
   if (overlay) overlay.classList.remove('hidden');
+
+  // 스크롤 가능한 상위 컨테이너 탐색 (video.play() 호출로 인한 자동 스크롤 방지용)
+  let scrollEl = video.parentElement;
+  while (scrollEl && scrollEl !== document.body) {
+    const st = getComputedStyle(scrollEl);
+    if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && scrollEl.scrollHeight > scrollEl.clientHeight) break;
+    scrollEl = scrollEl.parentElement;
+  }
+  const restoreScroll = () => {
+    if (!scrollEl) return;
+    const saved = scrollEl.scrollTop;
+    requestAnimationFrame(() => { scrollEl.scrollTop = saved; });
+  };
+
   if (Hls.isSupported()) {
     const hls = new Hls({ lowLatencyMode: true });
     itsHlsInstances[videoId] = hls;
     hls.loadSource(url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(()=>{}); if (overlay) overlay.classList.add('hidden'); });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      restoreScroll();
+      video.play().catch(() => {});
+      if (overlay) overlay.classList.add('hidden');
+      restoreScroll();
+    });
     hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal && overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = '스트림 오류'; } });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = url;
-    video.play().catch(()=>{});
+    restoreScroll();
+    video.play().catch(() => {});
     if (overlay) overlay.classList.add('hidden');
+    restoreScroll();
   } else {
     if (overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = 'HLS 미지원'; }
   }
@@ -1636,9 +1657,24 @@ async function loadItsCctv(course, videoId, listId, badgeId, countId, wrapId, ov
 }
 
 function selectItsCctv(card, urlEnc, videoId, overlayId, nameElId, nameEnc, listId) {
+  // 클릭 전 스크롤 위치 저장 (video.play() 호출 시 브라우저 자동 스크롤 방지)
+  let scrollEl = card.parentElement;
+  while (scrollEl && scrollEl !== document.body) {
+    const st = getComputedStyle(scrollEl);
+    if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && scrollEl.scrollHeight > scrollEl.clientHeight) break;
+    scrollEl = scrollEl.parentElement;
+  }
+  const savedScroll = scrollEl ? scrollEl.scrollTop : 0;
+
   document.querySelectorAll(`#${listId} .its-cctv-card`).forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   playItsCctv(decodeURIComponent(urlEnc), videoId, overlayId, nameElId, decodeURIComponent(nameEnc));
+
+  // 스크롤 복원 (동기 + 비동기 케이스 모두 처리)
+  if (scrollEl) {
+    requestAnimationFrame(() => { scrollEl.scrollTop = savedScroll; });
+    setTimeout(() => { scrollEl.scrollTop = savedScroll; }, 200);
+  }
 }
 
 /* ── CCTV 재시도 ── */
