@@ -1286,9 +1286,10 @@ function renderCuratedCard(r, idx) {
   const catTag = r.category
     ? `<span style="font-size:11px;padding:2px 7px;border-radius:8px;background:#f0fdf4;color:#15803d;font-weight:600;">${r.category}</span>`
     : '';
-  const linkBtn = r.naverUrl
-    ? `<a href="${r.naverUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#e8f5e9;color:#1b5e20;text-decoration:none;font-weight:600;">네이버 상세</a>`
-    : '';
+  // naverUrl 있으면 직접 링크, 없으면 주소 기반 검색 URL
+  const locationHint = (r.address || '').split(' ').slice(0, 2).join(' ');
+  const naverSearchUrl = `https://map.naver.com/v5/search/${encodeURIComponent(r.name + (locationHint ? ' ' + locationHint : ''))}`;
+  const ratingBtn = `<a href="${r.naverUrl || naverSearchUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;text-decoration:none;font-weight:600;">⭐ 평점 보기</a>`;
   const kakaoBtn = r.kakaoUrl
     ? `<a href="${r.kakaoUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
     : '';
@@ -1307,7 +1308,7 @@ function renderCuratedCard(r, idx) {
         ${phoneHtml ? `<div style="margin-bottom:6px;">${phoneHtml}</div>` : ''}
         ${noteHtml}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-          ${linkBtn}${kakaoBtn}
+          ${ratingBtn}${kakaoBtn}
         </div>
       </div>
     </div>
@@ -1321,6 +1322,9 @@ function renderFoodCardFromApi(p, idx) {
   const lat = parseFloat(p.y), lng = parseFloat(p.x);
   const nameEnc = encodeURIComponent(p.place_name);
   const naverFallback = `https://map.naver.com/p/search/${nameEnc}`;
+  // 평점 검색: 식당명 + 주소 앞 2단어(시/군/구)로 동명이인 구분
+  const addrHint = (p.address_name || p.road_address_name || '').split(' ').slice(0, 2).join(' ');
+  const naverSearchUrl = `https://map.naver.com/v5/search/${encodeURIComponent(p.place_name + (addrHint ? ' ' + addrHint : ''))}`;
   const phoneHtml = p.phone ? `<a href="tel:${p.phone}" style="font-size:12px;color:#16a34a;text-decoration:none;">📞 ${p.phone}</a>` : '';
   const placeBtn = p.place_url
     ? `<a href="${p.place_url}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#f3f4f6;color:#374151;text-decoration:none;">카카오맵</a>`
@@ -1337,6 +1341,7 @@ function renderFoodCardFromApi(p, idx) {
           ${placeBtn}
           <a href="tmap://route?goalname=${nameEnc}&goalx=${lng}&goaly=${lat}" onclick="setTimeout(()=>window.open('https://tmap.life/','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#e0f2fe;color:#0369a1;text-decoration:none;">TMAP</a>
           <a href="nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${nameEnc}&appname=golfnono" onclick="setTimeout(()=>window.open('${naverFallback}','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#dcfce7;color:#15803d;text-decoration:none;">네이버</a>
+          <a href="${naverSearchUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;text-decoration:none;font-weight:600;">⭐ 평점 보기</a>
         </div>
       </div>
     </div>
@@ -1349,36 +1354,48 @@ async function loadFood(listId, c) {
 
   // 큐레이션 데이터 확인
   const curated = (typeof curatedRestaurants !== 'undefined' && curatedRestaurants[c.name]) || [];
-  if (curated.length > 0) {
-    clearFoodOverlays();
-    showRadiusCircle(c);
-    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
-    map.setLevel(8);
-    el.innerHTML = curated.map((r, i) => renderCuratedCard(r, i)).join('');
-    el.insertAdjacentHTML('beforeend', '<p class="food-note">골프노노 큐레이션</p>');
-    return;
-  }
 
-  // 큐레이션 없으면 카카오 API 실시간 검색
+  // 항상 카카오 API도 함께 조회 (큐레이션 + API 혼합 표시)
   el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
   const places = await fetchRestaurants(c.lat, c.lng);
   clearFoodOverlays();
   showRadiusCircle(c);
-  if (!places.length) {
+
+  let html = '';
+
+  // [1] 큐레이션 맛집 먼저 (리스트 최상단)
+  if (curated.length > 0) {
+    html += curated.map((r, i) => renderCuratedCard(r, i)).join('');
+  }
+
+  // [2] 카카오 API 결과 이어서 (큐레이션 rank 이후 번호 부여)
+  const offset = curated.length;
+  if (places.length > 0) {
+    const apiPlaces = places.map((p, i) => ({
+      rank: i + offset + 1, name: p.place_name,
+      cat: getShortCategory(p.category_name),
+      dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
+      emoji: '🍽️', badges: [], placeUrl: p.place_url,
+      lat: parseFloat(p.y), lng: parseFloat(p.x),
+    }));
+    addFoodMarkers(c, apiPlaces);
+    fitMapToRestaurants(c, places);
+    html += places.map((p, i) => renderFoodCardFromApi(p, i + offset)).join('');
+  } else {
+    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+    map.setLevel(8);
+  }
+
+  if (!html) {
     el.innerHTML = '<p class="food-loading">주변 맛집 정보를 찾을 수 없습니다</p>';
     return;
   }
-  const apiPlaces = places.map((p, i) => ({
-    rank: i + 1, name: p.place_name,
-    cat: getShortCategory(p.category_name),
-    dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
-    emoji: '🍽️', badges: [], placeUrl: p.place_url,
-    lat: parseFloat(p.y), lng: parseFloat(p.x),
-  }));
-  addFoodMarkers(c, apiPlaces);
-  fitMapToRestaurants(c, places);
-  el.innerHTML = places.map((p, i) => renderFoodCardFromApi(p, i)).join('');
-  el.insertAdjacentHTML('beforeend', '<p class="food-note">카카오 로컬 API</p>');
+
+  el.innerHTML = html;
+  const noteText = curated.length > 0 && places.length > 0
+    ? '골프노노 큐레이션 + 카카오 로컬 API'
+    : curated.length > 0 ? '골프노노 큐레이션' : '카카오 로컬 API';
+  el.insertAdjacentHTML('beforeend', `<p class="food-note">${noteText}</p>`);
 }
 
 function setFoodMode(on) {
