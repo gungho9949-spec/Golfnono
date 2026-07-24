@@ -243,6 +243,13 @@ header.food-hidden { overflow: hidden; }
 .its-cctv-card-name { font-size:13px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .its-cctv-card-dist { font-size:11px; color:#6b7280; margin-top:2px; }
 
+/* CCTV 패널 구조: 영상 상단 고정 + 목록만 내부 스크롤 → iOS Safari video.play() 자동 스크롤 근본 차단 */
+#sp-cctv { overflow: hidden !important; display: flex !important; flex-direction: column; }
+#s-its-cctv-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* 데스크탑: 목록 높이 제한으로 사이드바 자동 스크롤 방지 */
+#p-cctv { display: flex; flex-direction: column; }
+#its-cctv-list { overflow-y: auto; overscroll-behavior: contain; max-height: 38vh; }
+
 /* 맛집 */
 .food-card {
   background: #fff; border: 1.5px solid #e5e7eb;
@@ -476,7 +483,7 @@ header.food-hidden { overflow: hidden; }
       <div class="panel" id="p-cctv">
         <div id="its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="its-cctv-count">0개 발견</span></div>
         <div class="its-cctv-video-wrap" id="its-cctv-wrap" style="display:none;">
-          <video id="its-cctv-video" muted playsinline tabindex="-1"></video>
+          <video id="its-cctv-video" muted playsinline webkit-playsinline tabindex="-1"></video>
           <div class="its-cctv-overlay" id="its-cctv-overlay">
             <div class="cctv-spinner"></div>
             <span>스트리밍 연결 중...</span>
@@ -554,7 +561,7 @@ header.food-hidden { overflow: hidden; }
   <div class="panel" id="sp-cctv">
     <div id="s-its-cctv-badge" class="its-cctv-badge" style="display:none;">📹 5km 이내 <span id="s-its-cctv-count">0개 발견</span></div>
     <div class="its-cctv-video-wrap" id="s-its-cctv-wrap" style="display:none;">
-      <video id="s-its-cctv-video" muted playsinline tabindex="-1"></video>
+      <video id="s-its-cctv-video" muted playsinline webkit-playsinline tabindex="-1"></video>
       <div class="its-cctv-overlay" id="s-its-cctv-overlay">
         <div class="cctv-spinner"></div>
         <span>스트리밍 연결 중...</span>
@@ -1586,10 +1593,13 @@ function playItsCctv(url, videoId, overlayId, nameEl, name) {
     if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && scrollEl.scrollHeight > scrollEl.clientHeight) break;
     scrollEl = scrollEl.parentElement;
   }
+  // 스크롤 위치를 함수 진입 시점에 1회 캡처 (호출할 때마다 읽으면 이미 스크롤된 값이 저장됨)
+  const savedScrollTop = scrollEl ? scrollEl.scrollTop : 0;
+  const savedWindowY = window.scrollY || 0;
   const restoreScroll = () => {
-    if (!scrollEl) return;
-    const saved = scrollEl.scrollTop;
-    requestAnimationFrame(() => { scrollEl.scrollTop = saved; });
+    if (scrollEl) scrollEl.scrollTop = savedScrollTop;
+    // iOS Safari는 body overflow:hidden 상태에서도 window를 스크롤시키는 경우가 있음
+    if (window.scrollY !== savedWindowY) window.scrollTo(0, savedWindowY);
   };
 
   if (Hls.isSupported()) {
@@ -1598,18 +1608,18 @@ function playItsCctv(url, videoId, overlayId, nameEl, name) {
     hls.loadSource(url);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      restoreScroll();
       video.play().catch(() => {});
       if (overlay) overlay.classList.add('hidden');
       restoreScroll();
+      requestAnimationFrame(restoreScroll);
     });
     hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal && overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = '스트림 오류'; } });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = url;
-    restoreScroll();
     video.play().catch(() => {});
     if (overlay) overlay.classList.add('hidden');
     restoreScroll();
+    requestAnimationFrame(restoreScroll);
   } else {
     if (overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = 'HLS 미지원'; }
   }
