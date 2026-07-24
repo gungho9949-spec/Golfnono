@@ -244,10 +244,11 @@ header.food-hidden { overflow: hidden; }
 .its-cctv-card-dist { font-size:11px; color:#6b7280; margin-top:2px; }
 
 /* CCTV 패널 구조: 영상 상단 고정 + 목록만 내부 스크롤 → iOS Safari video.play() 자동 스크롤 근본 차단 */
-#sp-cctv { overflow: hidden !important; display: flex !important; flex-direction: column; }
+/* ※ .on 조건 필수: 없으면 .panel { display:none } 을 ID 선택자가 덮어써서 항상 표시됨 */
+#sp-cctv.on { overflow: hidden; display: flex !important; flex-direction: column; }
 #s-its-cctv-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 /* 데스크탑: 목록 높이 제한으로 사이드바 자동 스크롤 방지 */
-#p-cctv { display: flex; flex-direction: column; }
+#p-cctv.on { display: flex; flex-direction: column; }
 #its-cctv-list { overflow-y: auto; overscroll-behavior: contain; max-height: 38vh; }
 
 /* 맛집 */
