@@ -2288,7 +2288,10 @@ function showTop10Modal() {
     }
   }
   all.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
-  const top10 = all.slice(0, 10);
+  // 음식점 이름 기준 중복 제거 (같은 음식점이 여러 골프장에 등록될 수 있음)
+  const seen = new Set();
+  const deduped = all.filter(r => { if (seen.has(r.name)) return false; seen.add(r.name); return true; });
+  const top10 = deduped.slice(0, 10);
 
   const listEl = document.getElementById('top10-list');
   listEl.innerHTML = top10.map((r, i) => {
