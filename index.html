@@ -2201,9 +2201,12 @@ loadTop5();
           <span style="font-size:26px;flex-shrink:0;">🌧️</span>
           <div><div style="font-weight:700;font-size:14px;color:#1d4ed8;">비·바람 예보 레이더</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">Windy 기반 골프 특화 날씨 지도</div></div>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;background:#fff7ed;border-radius:12px;padding:12px 14px;">
+        <div onclick="showTop10Modal()" style="display:flex;align-items:flex-start;gap:12px;background:#fff7ed;border-radius:12px;padding:12px 14px;cursor:pointer;transition:opacity .15s;" onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">
           <span style="font-size:26px;flex-shrink:0;">🍽️</span>
-          <div><div style="font-weight:700;font-size:14px;color:#c2410c;">주변 맛집 Top 10</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">골프장 3km 반경 인기 맛집</div></div>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:#c2410c;">주변 맛집 Top 10</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">골프장 3km 반경 인기 맛집 · 눌러서 미리 보기 👆</div>
+          </div>
         </div>
         <div style="display:flex;align-items:flex-start;gap:12px;background:#f0f9ff;border-radius:12px;padding:12px 14px;">
           <span style="font-size:26px;flex-shrink:0;">📹</span>
@@ -2222,15 +2225,44 @@ loadTop5();
     </div>
   </div>
 </div>
+<!-- Top 10 맛집 모달 -->
+<div id="top10-modal" style="display:none;position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,0.6);align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -4px 32px rgba(0,0,0,0.2);">
+    <!-- 핸들 -->
+    <div style="padding:12px 0 4px;text-align:center;flex-shrink:0;">
+      <div style="width:36px;height:4px;background:#e5e7eb;border-radius:2px;display:inline-block;"></div>
+    </div>
+    <!-- 헤더 -->
+    <div style="padding:4px 20px 14px;flex-shrink:0;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#1a1a1a;">⭐ 전국 골프장 인기 맛집 Top 10</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:3px;">평점 기준 · 골프장 방문 전 미리 확인하세요</div>
+        </div>
+        <button onclick="closeTop10Modal()" style="border:none;background:none;font-size:20px;color:#9ca3af;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+      </div>
+    </div>
+    <!-- 카드 목록 -->
+    <div id="top10-list" style="overflow-y:auto;flex:1;padding:12px 16px 8px;"></div>
+    <!-- 하단 버튼 -->
+    <div style="padding:12px 16px 24px;flex-shrink:0;border-top:1px solid #f3f4f6;">
+      <button onclick="closeTop10Modal(true)" style="width:100%;padding:14px;background:linear-gradient(135deg,#15803d,#22c55e);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,0.3);">
+        골프장 선택해서 내 주변 맛집 보기 →
+      </button>
+    </div>
+  </div>
+</div>
+
 <style>
 @keyframes introFadeOut { from { opacity:1; } to { opacity:0; } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
 .intro-hiding { animation: introFadeOut 0.4s ease forwards; }
+#top10-modal.open > div { animation: slideUp 0.3s ease; }
 </style>
 <script>
 (function() {
   const overlay = document.getElementById('intro-overlay');
-  // ?course= 공유 링크로 접속한 경우 인트로 건너뜀
   const hasCoursParam = new URLSearchParams(window.location.search).has('course');
   if (hasCoursParam) {
     overlay.style.display = 'none';
@@ -2242,6 +2274,57 @@ loadTop5();
     setTimeout(function() { overlay.style.display = 'none'; }, 400);
   });
 })();
+
+function showTop10Modal() {
+  if (typeof RESTAURANTS_DATA === 'undefined') return;
+
+  // 평점 4.0+, 리뷰 100개+ 중 평점 높은 순 Top 10
+  const all = [];
+  for (const [course, list] of Object.entries(RESTAURANTS_DATA)) {
+    for (const r of list) {
+      if (r.rating >= 4.0 && r.reviewCount >= 100) {
+        all.push({ ...r, courseName: course });
+      }
+    }
+  }
+  all.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
+  const top10 = all.slice(0, 10);
+
+  const listEl = document.getElementById('top10-list');
+  listEl.innerHTML = top10.map((r, i) => {
+    const kakaoBtn = r.kakaoUrl
+      ? `<a href="${r.kakaoUrl}" target="_blank" rel="noopener" style="font-size:12px;padding:4px 10px;border-radius:8px;background:#f3f4f6;color:#374151;text-decoration:none;white-space:nowrap;">카카오맵</a>`
+      : '';
+    return `
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f3f4f6;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:${i < 3 ? '#f59e0b' : '#16a34a'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;">${i + 1}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;color:#1a1a1a;margin-bottom:2px;">${r.name}</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${r.category || ''} · ${r.courseName}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;color:#f59e0b;font-weight:700;">⭐ ${r.rating}</span>
+          <span style="font-size:11px;color:#9ca3af;">(리뷰 ${r.reviewCount.toLocaleString()}개)</span>
+          ${kakaoBtn}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const modal = document.getElementById('top10-modal');
+  modal.style.display = 'flex';
+  modal.classList.add('open');
+}
+
+function closeTop10Modal(goToMap) {
+  const modal = document.getElementById('top10-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('open');
+  if (goToMap) {
+    const overlay = document.getElementById('intro-overlay');
+    overlay.classList.add('intro-hiding');
+    setTimeout(function() { overlay.style.display = 'none'; }, 400);
+  }
+}
 </script>
 
 <button id="home-fab" onclick="closeSheet(); setTimeout(goHome, 50);" style="display:none;position:fixed;bottom:24px;left:16px;z-index:300;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#22c55e);border:none;box-shadow:0 6px 20px rgba(22,163,74,0.55),0 2px 8px rgba(0,0,0,0.25);cursor:pointer;align-items:center;justify-content:center;">
