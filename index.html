@@ -487,8 +487,8 @@ header.food-hidden { overflow: hidden; }
       <div class="panel" id="p-food">
         <div class="food-ctrl" id="food-ctrl">
           <div class="food-sort">
-            <button class="fsort-btn on" id="fsort-dist" onclick="setFoodSort('dist','food-list')">📍 거리순</button>
-            <button class="fsort-btn" id="fsort-rating" onclick="setFoodSort('rating','food-list')">⭐ 평점순</button>
+            <button class="fsort-btn on" id="fsort-rating" onclick="setFoodSort('rating','food-list')">⭐ 평점순</button>
+            <button class="fsort-btn" id="fsort-dist" onclick="setFoodSort('dist','food-list')">📍 거리순</button>
           </div>
           <div class="food-cats" id="food-cats">
             <button class="fcat-btn on" onclick="setFoodCat('전체','food-list',this)">전체</button>
@@ -502,7 +502,6 @@ header.food-hidden { overflow: hidden; }
           </div>
         </div>
         <div id="food-list"></div>
-        <p class="food-note">T-map · 카드 빅데이터 기반</p>
       </div>
 
       <div class="panel" id="p-cctv">
@@ -581,8 +580,8 @@ header.food-hidden { overflow: hidden; }
   <div class="panel" id="sp-food">
     <div class="food-ctrl" id="s-food-ctrl">
       <div class="food-sort">
-        <button class="fsort-btn on" id="s-fsort-dist" onclick="setFoodSort('dist','s-food-list')">📍 거리순</button>
-        <button class="fsort-btn" id="s-fsort-rating" onclick="setFoodSort('rating','s-food-list')">⭐ 평점순</button>
+        <button class="fsort-btn on" id="s-fsort-rating" onclick="setFoodSort('rating','s-food-list')">⭐ 평점순</button>
+        <button class="fsort-btn" id="s-fsort-dist" onclick="setFoodSort('dist','s-food-list')">📍 거리순</button>
       </div>
       <div class="food-cats" id="s-food-cats">
         <button class="fcat-btn on" onclick="setFoodCat('전체','s-food-list',this)">전체</button>
@@ -596,7 +595,6 @@ header.food-hidden { overflow: hidden; }
       </div>
     </div>
     <div id="s-food-list"></div>
-    <p class="food-note">T-map · 카드 빅데이터 기반</p>
   </div>
 
   <div class="panel" id="sp-cctv">
@@ -1294,7 +1292,7 @@ function fillWeather(p, c) {
 }
 
 async function fetchRestaurants(lat, lng) {
-  const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=3000&sort=distance&size=15`;
+  const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${lng}&y=${lat}&radius=3000&sort=distance&size=10`;
   try {
     const res = await fetch(url, {
       headers: { Authorization: 'KakaoAK 85715def05ece125da02d43e2e6fa85e' }
@@ -1392,11 +1390,18 @@ function renderFoodCardFromApi(p, idx) {
   </div>`;
 }
 
-// 맛집 정렬·필터 상태 (listId별 관리)
-const _foodState = {};
+// 가중 평점: 리뷰 수가 적은 고평점의 과대 대표를 억제 (정렬 내부용, UI 미노출)
+// 공식: rating × log10(리뷰수 + 1)  예) 4.2점×500리뷰 → 11.36 > 4.5점×1리뷰 → 1.35
+function weightedRating(r) {
+  const rating = r.rating || r.naverRating || 0;
+  const count = r.reviewCount || 0;
+  return rating * Math.log10(count + 1);
+}
 
+// 맛집 정렬·필터 상태 (listId별 관리, RESTAURANTS_DATA 경로용)
+const _foodState = {};
 function _getFoodState(listId) {
-  if (!_foodState[listId]) _foodState[listId] = { sort: 'dist', cat: '전체', raw: [] };
+  if (!_foodState[listId]) _foodState[listId] = { sort: 'rating', cat: '전체', raw: [] };
   return _foodState[listId];
 }
 
@@ -1412,13 +1417,29 @@ function getFoodMappedCategory(cat) {
   return '기타';
 }
 
+// 큐레이션+API 경로 상태 (RESTAURANTS_DATA 없는 골프장용)
+let currentFoodSort = 'rating'; // 'rating' | 'dist'
+const foodDataCache = {};       // listId → { curated, places, course }
+
 function setFoodSort(sortType, listId) {
   const state = _getFoodState(listId);
   state.sort = sortType;
   const prefix = listId === 's-food-list' ? 's-' : '';
   document.getElementById(prefix + 'fsort-dist')?.classList.toggle('on', sortType === 'dist');
   document.getElementById(prefix + 'fsort-rating')?.classList.toggle('on', sortType === 'rating');
-  applyFoodFilter(listId);
+  // RESTAURANTS_DATA 경로
+  if (state.raw.length > 0) {
+    applyFoodFilter(listId);
+    return;
+  }
+  // 큐레이션+API 경로
+  currentFoodSort = sortType;
+  const cache = foodDataCache[listId];
+  if (cache) {
+    clearFoodOverlays();
+    showRadiusCircle(cache.course);
+    renderFoodList(listId);
+  }
 }
 
 function setFoodCat(cat, listId, btn) {
@@ -1437,19 +1458,13 @@ function applyFoodFilter(listId) {
 
   let items = [...state.raw];
 
-  // 카테고리 필터
   if (state.cat !== '전체') {
     items = items.filter(r => getFoodMappedCategory(r.category) === state.cat);
   }
 
-  // 정렬
+  // 가중 평점 정렬: rating × log10(리뷰수+1)
   if (state.sort === 'rating') {
-    items.sort((a, b) => {
-      if (a.rating == null && b.rating == null) return 0;
-      if (a.rating == null) return 1;
-      if (b.rating == null) return -1;
-      return b.rating - a.rating;
-    });
+    items.sort((a, b) => weightedRating(b) - weightedRating(a));
   } else {
     items.sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
   }
@@ -1459,7 +1474,6 @@ function applyFoodFilter(listId) {
     return;
   }
 
-  // 지도 마커 업데이트
   if (activeCourse) {
     const markers = items.map((r, i) => ({
       rank: i + 1, name: r.name, cat: r.category,
@@ -1518,62 +1532,53 @@ function renderEnrichedCard(r, idx) {
   </div>`;
 }
 
-async function loadFood(listId, c) {
+function renderFoodList(listId) {
   const el = document.getElementById(listId);
-  if (!el) return;
-
-  // 1순위: 정적 enriched 데이터
-  const enriched = (typeof RESTAURANTS_DATA !== 'undefined' && RESTAURANTS_DATA[c.name]) || [];
-  if (enriched.length > 0) {
-    clearFoodOverlays();
-    showRadiusCircle(c);
-    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
-    map.setLevel(8);
-    // 상태 초기화 (새 골프장 선택 시 거리순·전체로 리셋)
-    const state = _getFoodState(listId);
-    state.raw = enriched;
-    state.sort = 'dist';
-    state.cat = '전체';
-    // 필터 UI 리셋
-    const prefix = listId === 's-food-list' ? 's-' : '';
-    document.getElementById(prefix + 'fsort-dist')?.classList.add('on');
-    document.getElementById(prefix + 'fsort-rating')?.classList.remove('on');
-    document.getElementById(prefix + 'food-cats')?.querySelectorAll('.fcat-btn').forEach((b, i) => b.classList.toggle('on', i === 0));
-    applyFoodFilter(listId);
-    return;
-  }
-
-  // 2순위: 큐레이션 데이터 확인 — naverRating 높은 순 정렬
-  const rawCurated = (typeof curatedRestaurants !== 'undefined' && curatedRestaurants[c.name]) || [];
-  const curated = [...rawCurated].sort((a, b) => (b.naverRating || 0) - (a.naverRating || 0));
-
-  // 항상 카카오 API도 함께 조회 (큐레이션 + API 혼합 표시)
-  el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
-  const places = await fetchRestaurants(c.lat, c.lng);
-  clearFoodOverlays();
-  showRadiusCircle(c);
+  const cache = foodDataCache[listId];
+  if (!el || !cache) return;
+  const { curated, places, course: c } = cache;
 
   let html = '';
 
-  // [1] 큐레이션 맛집 먼저 (naverRating 높은 순, 리스트 최상단)
-  if (curated.length > 0) {
-    html += curated.map((r, i) => renderCuratedCard(r, i)).join('');
+  if (currentFoodSort === 'rating') {
+    // 평점순: 가중 평점 큐레이션 먼저, 카카오 API(거리 순) 뒤에
+    if (curated.length > 0) {
+      html += curated.map((r, i) => renderCuratedCard(r, i)).join('');
+    }
+    const offset = curated.length;
+    if (places.length > 0) {
+      const apiPlaces = places.map((p, i) => ({
+        rank: i + offset + 1, name: p.place_name,
+        cat: getShortCategory(p.category_name),
+        dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
+        emoji: '🍽️', badges: [], placeUrl: p.place_url,
+        lat: parseFloat(p.y), lng: parseFloat(p.x),
+      }));
+      addFoodMarkers(c, apiPlaces);
+      fitMapToRestaurants(c, places);
+      html += places.map((p, i) => renderFoodCardFromApi(p, i + offset)).join('');
+    }
+  } else {
+    // 거리순: 카카오 API(거리) 먼저, 큐레이션 뒤에
+    if (places.length > 0) {
+      const apiPlaces = places.map((p, i) => ({
+        rank: i + 1, name: p.place_name,
+        cat: getShortCategory(p.category_name),
+        dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
+        emoji: '🍽️', badges: [], placeUrl: p.place_url,
+        lat: parseFloat(p.y), lng: parseFloat(p.x),
+      }));
+      addFoodMarkers(c, apiPlaces);
+      fitMapToRestaurants(c, places);
+      html += places.map((p, i) => renderFoodCardFromApi(p, i)).join('');
+    }
+    if (curated.length > 0) {
+      const offset = places.length;
+      html += curated.map((r, i) => renderCuratedCard(r, offset + i)).join('');
+    }
   }
 
-  // [2] 카카오 API 결과 이어서 (큐레이션 rank 이후 번호 부여)
-  const offset = curated.length;
-  if (places.length > 0) {
-    const apiPlaces = places.map((p, i) => ({
-      rank: i + offset + 1, name: p.place_name,
-      cat: getShortCategory(p.category_name),
-      dist: p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm',
-      emoji: '🍽️', badges: [], placeUrl: p.place_url,
-      lat: parseFloat(p.y), lng: parseFloat(p.x),
-    }));
-    addFoodMarkers(c, apiPlaces);
-    fitMapToRestaurants(c, places);
-    html += places.map((p, i) => renderFoodCardFromApi(p, i + offset)).join('');
-  } else {
+  if (!places.length && !curated.length) {
     map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
     map.setLevel(8);
   }
@@ -1588,6 +1593,49 @@ async function loadFood(listId, c) {
     ? '골프노노 큐레이션 + 카카오 로컬 API'
     : curated.length > 0 ? '골프노노 큐레이션' : '카카오 로컬 API';
   el.insertAdjacentHTML('beforeend', `<p class="food-note">${noteText}</p>`);
+}
+
+async function loadFood(listId, c) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+
+  // 1순위: 정적 enriched 데이터 (RESTAURANTS_DATA) — 가중 평점 기본
+  const enriched = (typeof RESTAURANTS_DATA !== 'undefined' && RESTAURANTS_DATA[c.name]) || [];
+  if (enriched.length > 0) {
+    clearFoodOverlays();
+    showRadiusCircle(c);
+    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+    map.setLevel(8);
+    const state = _getFoodState(listId);
+    state.raw = enriched;
+    state.sort = 'rating';
+    state.cat = '전체';
+    const prefix = listId === 's-food-list' ? 's-' : '';
+    document.getElementById(prefix + 'fsort-rating')?.classList.add('on');
+    document.getElementById(prefix + 'fsort-dist')?.classList.remove('on');
+    document.getElementById(prefix + 'food-cats')?.querySelectorAll('.fcat-btn').forEach((b, i) => b.classList.toggle('on', i === 0));
+    applyFoodFilter(listId);
+    return;
+  }
+
+  // 2순위: 큐레이션 — 가중 평점(naverRating × log10(리뷰수+1)) 높은 순 정렬
+  const rawCurated = (typeof curatedRestaurants !== 'undefined' && curatedRestaurants[c.name]) || [];
+  const curated = [...rawCurated].sort((a, b) => weightedRating(b) - weightedRating(a));
+
+  // 3순위: 카카오 API (큐레이션 + API 혼합)
+  el.innerHTML = '<p class="food-loading">🔍 주변 맛집 정보를 불러오는 중...</p>';
+  const places = await fetchRestaurants(c.lat, c.lng);
+  clearFoodOverlays();
+  showRadiusCircle(c);
+
+  // 평점순 기본 선택 반영
+  currentFoodSort = 'rating';
+  const prefix = listId === 's-food-list' ? 's-' : '';
+  document.getElementById(prefix + 'fsort-rating')?.classList.add('on');
+  document.getElementById(prefix + 'fsort-dist')?.classList.remove('on');
+
+  foodDataCache[listId] = { curated, places, course: c };
+  renderFoodList(listId);
 }
 
 function setFoodMode(on) {
