@@ -302,13 +302,9 @@ header.food-hidden { overflow: hidden; }
 .food-loading { text-align: center; padding: 24px; color: #9ca3af; font-size: 13px; }
 .food-note { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 2px; }
 .food-ctrl { padding: 8px 12px 4px; border-bottom: 1px solid #f3f4f6; background: #fff; position: sticky; top: 0; z-index: 10; }
-.food-sort { display: flex; gap: 6px; margin-bottom: 8px; }
+.food-sort { display: flex; gap: 6px; }
 .fsort-btn { flex: 1; padding: 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; transition: all .15s; }
 .fsort-btn.on { background: #16a34a; border-color: #16a34a; color: #fff; }
-.food-cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-.food-cats::-webkit-scrollbar { display: none; }
-.fcat-btn { flex-shrink: 0; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; white-space: nowrap; transition: all .15s; }
-.fcat-btn.on { background: #16a34a; border-color: #16a34a; color: #fff; }
 
 /* CCTV 버튼 */
 .cctv-btn {
@@ -487,18 +483,8 @@ header.food-hidden { overflow: hidden; }
       <div class="panel" id="p-food">
         <div class="food-ctrl" id="food-ctrl">
           <div class="food-sort">
-            <button class="fsort-btn on" id="fsort-rating" onclick="setFoodSort('rating','food-list')">⭐ 평점순</button>
+            <button class="fsort-btn on" id="fsort-rating" onclick="setFoodSort('rating','food-list')">⭐ 인기순</button>
             <button class="fsort-btn" id="fsort-dist" onclick="setFoodSort('dist','food-list')">📍 거리순</button>
-          </div>
-          <div class="food-cats" id="food-cats">
-            <button class="fcat-btn on" onclick="setFoodCat('전체','food-list',this)">전체</button>
-            <button class="fcat-btn" onclick="setFoodCat('한식','food-list',this)">한식</button>
-            <button class="fcat-btn" onclick="setFoodCat('고기','food-list',this)">고기</button>
-            <button class="fcat-btn" onclick="setFoodCat('닭·오리','food-list',this)">닭·오리</button>
-            <button class="fcat-btn" onclick="setFoodCat('해산물','food-list',this)">해산물</button>
-            <button class="fcat-btn" onclick="setFoodCat('중식','food-list',this)">중식</button>
-            <button class="fcat-btn" onclick="setFoodCat('분식','food-list',this)">분식</button>
-            <button class="fcat-btn" onclick="setFoodCat('카페·빵','food-list',this)">카페·빵</button>
           </div>
         </div>
         <div id="food-list"></div>
@@ -580,18 +566,8 @@ header.food-hidden { overflow: hidden; }
   <div class="panel" id="sp-food">
     <div class="food-ctrl" id="s-food-ctrl">
       <div class="food-sort">
-        <button class="fsort-btn on" id="s-fsort-rating" onclick="setFoodSort('rating','s-food-list')">⭐ 평점순</button>
+        <button class="fsort-btn on" id="s-fsort-rating" onclick="setFoodSort('rating','s-food-list')">⭐ 인기순</button>
         <button class="fsort-btn" id="s-fsort-dist" onclick="setFoodSort('dist','s-food-list')">📍 거리순</button>
-      </div>
-      <div class="food-cats" id="s-food-cats">
-        <button class="fcat-btn on" onclick="setFoodCat('전체','s-food-list',this)">전체</button>
-        <button class="fcat-btn" onclick="setFoodCat('한식','s-food-list',this)">한식</button>
-        <button class="fcat-btn" onclick="setFoodCat('고기','s-food-list',this)">고기</button>
-        <button class="fcat-btn" onclick="setFoodCat('닭·오리','s-food-list',this)">닭·오리</button>
-        <button class="fcat-btn" onclick="setFoodCat('해산물','s-food-list',this)">해산물</button>
-        <button class="fcat-btn" onclick="setFoodCat('중식','s-food-list',this)">중식</button>
-        <button class="fcat-btn" onclick="setFoodCat('분식','s-food-list',this)">분식</button>
-        <button class="fcat-btn" onclick="setFoodCat('카페·빵','s-food-list',this)">카페·빵</button>
       </div>
     </div>
     <div id="s-food-list"></div>
@@ -1405,18 +1381,6 @@ function _getFoodState(listId) {
   return _foodState[listId];
 }
 
-function getFoodMappedCategory(cat) {
-  if (!cat) return '기타';
-  if (/한식/.test(cat)) return '한식';
-  if (/육류|고기|갈비|곱창|장어/.test(cat)) return '고기';
-  if (/닭|오리/.test(cat)) return '닭·오리';
-  if (/해물|생선|회|매운탕|추어/.test(cat)) return '해산물';
-  if (/중국/.test(cat)) return '중식';
-  if (/분식|돈까스|칼국수|국수/.test(cat)) return '분식';
-  if (/카페|제과|베이커리/.test(cat)) return '카페·빵';
-  return '기타';
-}
-
 // 큐레이션+API 경로 상태 (RESTAURANTS_DATA 없는 골프장용)
 let currentFoodSort = 'rating'; // 'rating' | 'dist'
 const foodDataCache = {};       // listId → { curated, places, course }
@@ -1442,25 +1406,12 @@ function setFoodSort(sortType, listId) {
   }
 }
 
-function setFoodCat(cat, listId, btn) {
-  const state = _getFoodState(listId);
-  state.cat = cat;
-  const prefix = listId === 's-food-list' ? 's-' : '';
-  document.getElementById(prefix + 'food-cats')?.querySelectorAll('.fcat-btn').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  applyFoodFilter(listId);
-}
-
 function applyFoodFilter(listId) {
   const state = _getFoodState(listId);
   const el = document.getElementById(listId);
   if (!el || !state.raw.length) return;
 
   let items = [...state.raw];
-
-  if (state.cat !== '전체') {
-    items = items.filter(r => getFoodMappedCategory(r.category) === state.cat);
-  }
 
   // 가중 평점 정렬: rating × log10(리뷰수+1)
   if (state.sort === 'rating') {
@@ -1613,7 +1564,6 @@ async function loadFood(listId, c) {
     const prefix = listId === 's-food-list' ? 's-' : '';
     document.getElementById(prefix + 'fsort-rating')?.classList.add('on');
     document.getElementById(prefix + 'fsort-dist')?.classList.remove('on');
-    document.getElementById(prefix + 'food-cats')?.querySelectorAll('.fcat-btn').forEach((b, i) => b.classList.toggle('on', i === 0));
     applyFoodFilter(listId);
     return;
   }
