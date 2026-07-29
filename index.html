@@ -1498,8 +1498,12 @@ function renderEnrichedCard(r, idx) {
     ? `<a href="tmap://route?goalname=${nameEnc}&goalx=${lng}&goaly=${lat}" onclick="setTimeout(()=>window.open('https://tmap.life/','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#e0f2fe;color:#0369a1;text-decoration:none;">TMAP</a>`
     : '';
   const naverBtn = lat && lng
-    ? `<a href="nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${nameEnc}&appname=golfnono" onclick="setTimeout(()=>window.open('${naverFallback}','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#dcfce7;color:#15803d;text-decoration:none;">네이버</a>`
+    ? `<a href="nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${nameEnc}&appname=golfnono" onclick="setTimeout(()=>window.open('${naverFallback}','_blank'),1500)" style="font-size:12px;padding:4px 10px;border-radius:10px;background:#dcfce7;color:#15803d;text-decoration:none;">네이버 길찾기</a>`
     : '';
+  // 주소에서 시/군/구 추출 (예: "충북 제천시 ..." → "충북 제천시")
+  const addrParts = (r.address || '').split(' ');
+  const sigungu = addrParts.slice(0, 2).join(' ');
+  const naverSearchUrl = `https://search.naver.com/search.naver?query=${encodeURIComponent(r.name + ' ' + sigungu)}`;
   return `
   <div class="food-card" data-rank="${rank}" onclick="cardClick(${rank})">
     <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -1508,7 +1512,7 @@ function renderEnrichedCard(r, idx) {
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
           ${catTag}${distHtml}
         </div>
-        <div style="font-weight:700;font-size:14px;margin-bottom:2px;">${r.name}</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px;"><a href="${naverSearchUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#15803d;text-decoration:underline;text-underline-offset:2px;">${r.name}</a></div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">${ratingHtml}</div>
         ${r.address ? `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">📍 ${r.address}</div>` : ''}
         ${phoneHtml ? `<div style="margin-bottom:6px;">${phoneHtml}</div>` : ''}
