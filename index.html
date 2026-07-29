@@ -444,8 +444,8 @@ header.food-hidden { overflow: hidden; }
             <div class="d-rating" id="d-rating"></div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <button id="fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
-            <button onclick="shareGolfCourse()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;padding:2px;" title="공유">🔗</button>
+            <button id="fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;" title="즐겨찾기">♡</button>
+            <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v4h16v-4"/><polyline points="8 8 12 4 16 8"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
             <div class="d-temp" id="d-temp"></div>
           </div>
         </div>
@@ -527,8 +527,8 @@ header.food-hidden { overflow: hidden; }
         <div class="d-region" id="s-region"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button id="s-fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:2px;">♡</button>
-        <button onclick="shareGolfCourse()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;padding:2px;" title="공유">🔗</button>
+        <button id="s-fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;" title="즐겨찾기">♡</button>
+        <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v4h16v-4"/><polyline points="8 8 12 4 16 8"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
         <div class="d-temp" id="s-temp"></div>
       </div>
     </div>
@@ -2012,13 +2012,20 @@ function toggleFavorite() {
   const idx = favs.indexOf(name);
   if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
   saveFavorites(favs);
-  updateFavBtn(favs.includes(name));
+  updateFavBtn(favs.includes(name), true);
   renderFavorites();
 }
-function updateFavBtn(isFav) {
+function updateFavBtn(isFav, animate) {
   ['fav-btn','s-fav-btn'].forEach(id => {
     const b = document.getElementById(id);
-    if (b) b.textContent = isFav ? '♥' : '♡';
+    if (!b) return;
+    b.textContent = isFav ? '♥' : '♡';
+    b.style.color = isFav ? '#FF3B30' : '#9ca3af';
+    if (animate) {
+      b.classList.remove('fav-pop');
+      void b.offsetWidth; // reflow to restart animation
+      b.classList.add('fav-pop');
+    }
   });
 }
 function renderFavorites() {
@@ -2245,6 +2252,8 @@ loadTop5();
 @keyframes introFadeOut { from { opacity:1; } to { opacity:0; } }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+@keyframes heartPop { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
+.fav-pop { animation: heartPop 0.3s ease; }
 .intro-hiding { animation: introFadeOut 0.4s ease forwards; }
 #top10-modal.open > div { animation: slideUp 0.3s ease; }
 </style>
