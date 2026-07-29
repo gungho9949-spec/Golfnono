@@ -754,6 +754,8 @@ let foodRadiusCircle = null;
 let foodClusterer = null;
 const FOOD_ANGLES = [50, 160, 280];
 let activeCourse = null;
+let _lastSheetCourse = null; // 마지막으로 열었던 골프장
+let _lastSheetTab = 'weather'; // 마지막으로 보던 탭
 
 function getRestaurantPos(course, r) {
   const km = parseFloat(r.dist) || 1;
@@ -929,7 +931,8 @@ async function fillSheet(c) {
   fillCctv('s-windy-iframe', c);
   document.querySelectorAll('#sp-weather .r-btn').forEach(b => b.classList.remove('on'));
   document.querySelector('#sp-weather .r-btn:nth-child(2)').classList.add('on');
-  stab('weather');
+  // 같은 골프장 재진입 시 마지막 탭 복원, 다른 골프장이면 날씨 탭으로 리셋
+  stab(_lastSheetCourse === c.name && _lastSheetTab ? _lastSheetTab : 'weather');
   const live = await fetchWeather(c);
   const weather = live || c.weather;
   if (live) {
@@ -1647,6 +1650,7 @@ function tab(id) {
   }
 }
 function stab(id) {
+  _lastSheetTab = id;
   if (id !== 'cctv') destroyItsCctv('s-its-cctv-video');
   if (id !== 'food') setFoodMode(false);
   ['weather','food','cctv','info'].forEach(t => {
@@ -1705,6 +1709,7 @@ async function loadPhoto(listId, c) {
     </div>`;
 }
 function closeSheet() {
+  _lastSheetCourse = activeCourse?.name || null;
   setFoodMode(false);
   const sheet = document.getElementById('sheet');
   sheet.style.transform = '';
@@ -2157,26 +2162,7 @@ async function loadTop5() {
 }
 
 /* ── 바텀시트 스와이프 닫기 ── */
-(function() {
-  const sheet = document.getElementById('sheet');
-  let startY = 0, dragging = false;
-  sheet.addEventListener('touchstart', e => {
-    if (e.target.closest('.cctv-player-wrap, select, video, iframe')) return;
-    startY = e.touches[0].clientY; dragging = true;
-  }, { passive: true });
-  sheet.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    const dy = e.touches[0].clientY - startY;
-    if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
-  }, { passive: true });
-  sheet.addEventListener('touchend', e => {
-    if (!dragging) return;
-    dragging = false;
-    const dy = e.changedTouches[0].clientY - startY;
-    sheet.style.transform = '';
-    if (dy > 80) closeSheet();
-  });
-})();
+// 스와이프 다운으로 바텀시트 닫힘 비활성화 — X 버튼으로만 닫을 수 있음
 
 // 초기화
 renderFavorites();
