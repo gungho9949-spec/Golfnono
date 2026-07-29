@@ -445,7 +445,7 @@ header.food-hidden { overflow: hidden; }
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button id="fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;" title="즐겨찾기">♡</button>
-            <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v4h16v-4"/><polyline points="8 8 12 4 16 8"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
+            <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>
             <div class="d-temp" id="d-temp"></div>
           </div>
         </div>
@@ -528,7 +528,7 @@ header.food-hidden { overflow: hidden; }
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <button id="s-fav-btn" onclick="toggleFavorite()" style="background:none;border:none;font-size:24px;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;" title="즐겨찾기">♡</button>
-        <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v4h16v-4"/><polyline points="8 8 12 4 16 8"/><line x1="12" y1="4" x2="12" y2="16"/></svg></button>
+        <button onclick="shareGolfCourse()" style="background:none;border:none;cursor:pointer;line-height:1;padding:2px;color:#9ca3af;display:flex;align-items:center;" title="공유"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>
         <div class="d-temp" id="s-temp"></div>
       </div>
     </div>
@@ -1471,7 +1471,7 @@ function renderEnrichedCard(r, idx) {
   // 주소에서 시/군/구 추출 (예: "충북 제천시 ..." → "충북 제천시")
   // 주소에서 시/군/구 단위만 추출 (예: "강원특별자치도 홍천군 ..." → "홍천군")
   const sigungu = (r.address || '').split(' ').find(w => /[시군구]$/.test(w)) || '';
-  const naverSearchUrl = `https://m.place.naver.com/search?query=${encodeURIComponent(r.name + (sigungu ? ' ' + sigungu : ''))}`;
+  const naverSearchUrl = `https://m.place.naver.com/restaurant/list?query=${encodeURIComponent(r.name + (sigungu ? ' ' + sigungu : ''))}`;
   return `
   <div class="food-card" data-rank="${rank}" onclick="cardClick(${rank})">
     <div style="display:flex;gap:12px;align-items:flex-start;">
