@@ -1471,7 +1471,7 @@ function renderEnrichedCard(r, idx) {
   // 주소에서 시/군/구 추출 (예: "충북 제천시 ..." → "충북 제천시")
   // 주소에서 시/군/구 단위만 추출 (예: "강원특별자치도 홍천군 ..." → "홍천군")
   const sigungu = (r.address || '').split(' ').find(w => /[시군구]$/.test(w)) || '';
-  const naverSearchUrl = `https://m.place.naver.com/restaurant/list?query=${encodeURIComponent(r.name + (sigungu ? ' ' + sigungu : ''))}`;
+  const naverSearchUrl = `https://m.search.naver.com/search.naver?where=m_place&query=${encodeURIComponent(r.name + (sigungu ? ' ' + sigungu : ''))}`;
   return `
   <div class="food-card" data-rank="${rank}" onclick="cardClick(${rank})">
     <div style="display:flex;gap:12px;align-items:flex-start;">
