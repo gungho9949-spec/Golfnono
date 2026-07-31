@@ -5,6 +5,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Golfnono 골프노노</title>
+<meta property="og:title" content="Golfnono | 골프장 실시간 날씨 · 맛집 정보">
+<meta property="og:description" content="전국 541개 골프장 날씨, 주변 맛집, 실시간 CCTV를 한눈에">
+<meta property="og:image" content="https://golfnono-kr.vercel.app/og-image.png">
+<meta property="og:url" content="https://golfnono-kr.vercel.app">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=28bac2696bc8d416ce3d2f349581838e&libraries=clusterer"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
@@ -377,7 +383,7 @@ header.food-hidden { overflow: hidden; }
   <div class="search-wrap" id="search-wrap">
     <div class="search-input-row">
       <span class="search-icon">🔍</span>
-      <input class="search-input" id="search-input" type="text" placeholder="골프장 이름 검색..." autocomplete="off">
+      <input class="search-input" id="search-input" type="text" placeholder="골프장 이름 검색..." autocomplete="off" maxlength="30">
     </div>
     <div class="search-dropdown" id="search-dropdown"></div>
   </div>
@@ -496,11 +502,10 @@ header.food-hidden { overflow: hidden; }
           <video id="its-cctv-video" muted playsinline webkit-playsinline tabindex="-1"></video>
           <div class="its-cctv-overlay" id="its-cctv-overlay">
             <div class="cctv-spinner"></div>
-            <span>스트리밍 연결 중...</span>
           </div>
           <div class="its-cctv-title" id="its-cctv-playing-name"></div>
         </div>
-        <div id="its-cctv-list"></div>
+        <div id="its-cctv-list"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:8px;"><span style="font-size:36px;">📹</span><p style="font-size:14px;color:#6b7280;margin:0;">골프장을 먼저 선택해주세요</p></div></div>
       </div>
 
       <div class="panel" id="p-info">
@@ -579,11 +584,10 @@ header.food-hidden { overflow: hidden; }
       <video id="s-its-cctv-video" muted playsinline webkit-playsinline tabindex="-1"></video>
       <div class="its-cctv-overlay" id="s-its-cctv-overlay">
         <div class="cctv-spinner"></div>
-        <span>스트리밍 연결 중...</span>
       </div>
       <div class="its-cctv-title" id="s-its-cctv-playing-name"></div>
     </div>
-    <div id="s-its-cctv-list"></div>
+    <div id="s-its-cctv-list"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:8px;"><span style="font-size:36px;">📹</span><p style="font-size:14px;color:#6b7280;margin:0;">골프장을 먼저 선택해주세요</p></div></div>
   </div>
 
   <div class="panel" id="sp-info">
@@ -1206,7 +1210,7 @@ function selectCourse(course) {
   function renderDropdown(q) {
     const results = COURSES.filter(c => c.name.includes(q)).slice(0, 5);
     if (!results.length) {
-      dropdown.innerHTML = '<div class="search-empty">검색 결과가 없습니다</div>';
+      dropdown.innerHTML = `<div class="search-empty">'${q}'에 해당하는 골프장이 없습니다</div>`;
     } else {
       dropdown.innerHTML = '';
       results.forEach(c => {
@@ -1791,6 +1795,16 @@ function destroyItsCctv(videoId) {
   if (v) { v.pause(); v.src = ''; }
 }
 
+function _showCctvError(overlay, msg, url, videoId, overlayId, nameEl, name) {
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  overlay.innerHTML = `<span style="font-size:14px;">${msg}</span>` +
+    `<button style="margin-top:10px;padding:6px 18px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">재시도</button>`;
+  overlay.querySelector('button').addEventListener('click', () => {
+    playItsCctv(url, videoId, overlayId, nameEl, name);
+  });
+}
+
 function playItsCctv(url, videoId, overlayId, nameEl, name) {
   const video = document.getElementById(videoId);
   const overlay = document.getElementById(overlayId);
@@ -1800,7 +1814,17 @@ function playItsCctv(url, videoId, overlayId, nameEl, name) {
   // HTTP → HTTPS 변환으로 mixed content 차단 우회 (cctvsec.ktict.co.kr HTTPS 지원 확인)
   if (url.startsWith('http://')) url = url.replace('http://', 'https://');
   if (nEl) nEl.textContent = name;
-  if (overlay) overlay.classList.remove('hidden');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    overlay.innerHTML = '<div class="cctv-spinner"></div>';
+  }
+
+  // 10초 타임아웃: 연결 실패 처리
+  const timeoutId = setTimeout(() => {
+    if (overlay && !overlay.classList.contains('hidden')) {
+      _showCctvError(overlay, '연결에 실패했습니다', url, videoId, overlayId, nameEl, name);
+    }
+  }, 10000);
 
   // 스크롤 가능한 상위 컨테이너 탐색 (video.play() 호출로 인한 자동 스크롤 방지용)
   let scrollEl = video.parentElement;
@@ -1824,20 +1848,28 @@ function playItsCctv(url, videoId, overlayId, nameEl, name) {
     hls.loadSource(url);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      clearTimeout(timeoutId);
       video.play().catch(() => {});
       if (overlay) overlay.classList.add('hidden');
       restoreScroll();
       requestAnimationFrame(restoreScroll);
     });
-    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal && overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = '스트림 오류'; } });
+    hls.on(Hls.Events.ERROR, (_, d) => {
+      if (d.fatal) {
+        clearTimeout(timeoutId);
+        _showCctvError(overlay, '연결에 실패했습니다', url, videoId, overlayId, nameEl, name);
+      }
+    });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    clearTimeout(timeoutId);
     video.src = url;
     video.play().catch(() => {});
     if (overlay) overlay.classList.add('hidden');
     restoreScroll();
     requestAnimationFrame(restoreScroll);
   } else {
-    if (overlay) { overlay.classList.remove('hidden'); overlay.querySelector('span').textContent = 'HLS 미지원'; }
+    clearTimeout(timeoutId);
+    _showCctvError(overlay, 'HLS 미지원 브라우저', url, videoId, overlayId, nameEl, name);
   }
 }
 
@@ -1846,7 +1878,7 @@ async function loadItsCctv(course, videoId, listId, badgeId, countId, wrapId, ov
   const badge = document.getElementById(badgeId);
   const countEl = document.getElementById(countId);
   const wrap = document.getElementById(wrapId);
-  if (listEl) listEl.innerHTML = '<p class="food-loading">📡 주변 CCTV 정보를 불러오는 중...</p>';
+  if (listEl) listEl.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:10px;"><div class="cctv-spinner" style="border-color:#e5e7eb;border-top-color:#22c55e;"></div><p style="font-size:13px;color:#9ca3af;margin:0;">주변 CCTV 정보를 불러오는 중...</p></div>';
   if (badge) badge.style.display = 'none';
   if (wrap) wrap.style.display = 'none';
 
@@ -2010,7 +2042,8 @@ function toggleFavorite() {
   const name = activeCourse.name;
   let favs = getFavorites();
   const idx = favs.indexOf(name);
-  if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
+  if (idx >= 0) { favs.splice(idx, 1); showToast('즐겨찾기가 해제됐어요'); }
+  else { favs.push(name); showToast('💚 즐겨찾기에 저장됐어요'); }
   saveFavorites(favs);
   updateFavBtn(favs.includes(name), true);
   renderFavorites();
@@ -2216,7 +2249,7 @@ loadTop5();
     <!-- 시작 버튼 -->
     <div style="padding:16px 20px 24px;text-align:center;">
       <button id="intro-start-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#15803d,#22c55e);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,0.35);">시작하기</button>
-      <div style="font-size:11px;color:#9ca3af;margin-top:10px;">다음부터는 이 화면이 나오지 않아요</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:10px;">이 기기에서 다시 보지 않기</div>
     </div>
   </div>
 </div>
